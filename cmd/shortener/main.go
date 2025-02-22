@@ -14,7 +14,7 @@ var counter int
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", PostUrl)
+	mux.HandleFunc("/", PostURL)
 
 	err := http.ListenAndServe(`:8080`, mux)
 	if err != nil {
@@ -24,7 +24,7 @@ func main() {
 
 func PostURL(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
-		GetUrl(res, req)
+		GetURL(res, req)
 		return
 	}
 
