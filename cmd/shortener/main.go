@@ -22,7 +22,7 @@ func main() {
 	}
 }
 
-func PostUrl (res http.ResponseWriter, req *http.Request) {
+func PostUrl(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		GetUrl(res, req)
 		return
@@ -44,7 +44,7 @@ func PostUrl (res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte(fmt.Sprintf("http://localhost:8080/%s", urlShort)))
 }
 
-func GetUrl (res http.ResponseWriter, req *http.Request) {
+func GetUrl(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		http.Error(res, "Only GET method allowed!", http.StatusBadRequest)
 		return
