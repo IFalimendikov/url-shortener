@@ -34,12 +34,23 @@ func PostURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if len(body) == 0 {
+		http.Error(res, "Empty URL!", http.StatusBadRequest)
+		return
+	}
+
+	urlStr := string(body)
+	if !strings.HasPrefix(urlStr, "https://") && !strings.HasPrefix(urlStr, "http://") {
+		http.Error(res, "Mallformed URL!", http.StatusBadRequest)
+		return
+	}
+
 	counter++
 
 	urlShort := base.Encode(int64(counter*1000000))
 	urlMap[urlShort] = string(body)
 
-	res.Header().Set("Content-type", "text/plain")
+	res.Header().Set("Content-Type", "text/plain")
 	res.WriteHeader(http.StatusCreated)
 	res.Write([]byte(fmt.Sprintf("http://localhost:8080/%s", urlShort)))
 }
