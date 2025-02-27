@@ -20,8 +20,8 @@ func main() {
 func URLRouter() *gin.Engine {
 	r := gin.Default()
 
-	r.POST("/postURL", PostURL)
-	r.GET("/getURL/:id", GetURL)
+	r.POST("/", PostURL)
+	r.GET("/:id", GetURL)
 
 	return r
 }

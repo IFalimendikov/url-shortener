@@ -37,10 +37,10 @@ func TestPostURL(t *testing.T) {
         want   string
         status int
     }{
-        {"/postURL", "https://practicum.yandex.ru/", "http://localhost:8080/4C92", http.StatusCreated},
-        {"/postURL", "https://practicum.yandex.at/", "http://localhost:8080/8OI4", http.StatusCreated},
-        {"/postURL", "", "\"Empty body!\"", http.StatusBadRequest},
-        {"/postURL", "practicum.yandex.ru/", "\"Mallformed URI!\"", http.StatusBadRequest},
+        {"/", "https://practicum.yandex.ru/", "http://localhost:8080/4C92", http.StatusCreated},
+        {"/", "https://practicum.yandex.at/", "http://localhost:8080/8OI4", http.StatusCreated},
+        {"/", "", "\"Empty body!\"", http.StatusBadRequest},
+        {"/", "practicum.yandex.ru/", "\"Mallformed URI!\"", http.StatusBadRequest},
     }
 
     for _, test := range testTable {
@@ -66,9 +66,9 @@ func TestGetURL(t *testing.T) {
         want   string
         status int
     }{
-        {"/getURL/4C92", "", "https://practicum.yandex.ru/", http.StatusTemporaryRedirect},
-        {"/getURL/8OI4", "", "https://practicum.yandex.at/", http.StatusTemporaryRedirect},
-        {"/getURL/91OP", "", "\"URL not found!\"", http.StatusBadRequest},
+        {"/4C92", "", "https://practicum.yandex.ru/", http.StatusTemporaryRedirect},
+        {"/8OI4", "", "https://practicum.yandex.at/", http.StatusTemporaryRedirect},
+        {"/91OP", "", "\"URL not found!\"", http.StatusBadRequest},
     }
 
     // First create the shortened URLs
