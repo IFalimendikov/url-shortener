@@ -45,6 +45,7 @@ func TestPostURL(t *testing.T) {
 
     for _, test := range testTable {
         resp, body := testRequest(t, ts, "POST", test.url, bytes.NewReader([]byte(test.body)))
+        defer resp.Body.Close()
         assert.Equal(t, test.status, resp.StatusCode)
         assert.Equal(t, test.want, body)
     }
@@ -71,11 +72,14 @@ func TestGetURL(t *testing.T) {
     }
 
     // First create the shortened URLs
-    _, _ = testRequest(t, ts, "POST", "/postURL", bytes.NewReader([]byte("https://practicum.yandex.ru/")))
-    _, _ = testRequest(t, ts, "POST", "/postURL", bytes.NewReader([]byte("https://practicum.yandex.at/")))
+    resp, _ := testRequest(t, ts, "POST", "/postURL", bytes.NewReader([]byte("https://practicum.yandex.ru/")))
+    defer resp.Body.Close()
+    resp, _ = testRequest(t, ts, "POST", "/postURL", bytes.NewReader([]byte("https://practicum.yandex.at/")))
+    defer resp.Body.Close()
 
     for _, test := range testTable {
         resp, body := testRequest(t, ts, "GET", test.url, bytes.NewReader([]byte(test.body)))
+        defer resp.Body.Close()
         assert.Equal(t, test.status, resp.StatusCode)
 		if resp.StatusCode == 400 {
 			assert.Equal(t, test.want, body)
