@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	base "github.com/jcoene/go-base62"
 )
 
@@ -13,66 +13,71 @@ var urlMap = map[string]string{}
 var counter int
 
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", PostURL)
-
-	err := http.ListenAndServe(`:8080`, mux)
-	if err != nil {
-		panic(err)
-	}
+	r := URLRouter()
+	r.Run()
 }
 
-func PostURL(res http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		GetURL(res, req)
+func URLRouter() *gin.Engine {
+	r := gin.Default()
+
+	r.POST("/postURL", PostURL)
+	r.GET("/getURL/:id", GetURL)
+
+	return r
+}
+
+func PostURL(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusBadRequest, "Only POST method allowed!")
 		return
 	}
 
-	body, err := io.ReadAll(req.Body)
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		http.Error(res, "Cannot read body!", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, "Cant read body!")
 		return
 	}
 
 	if len(body) == 0 {
-		http.Error(res, "Empty URL!", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, "Empty body!")
 		return
 	}
 
 	urlStr := string(body)
 	if !strings.HasPrefix(urlStr, "https://") && !strings.HasPrefix(urlStr, "http://") {
-		http.Error(res, "Mallformed URL!", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, "Mallformed URI!")
 		return
 	}
 
 	counter++
 
-	urlShort := base.Encode(int64(counter*1000000))
+	urlShort := base.Encode(int64(counter * 1000000))
 	urlMap[urlShort] = string(body)
 
-	res.Header().Set("Content-Type", "text/plain")
-	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(fmt.Sprintf("http://localhost:8080/%s", urlShort)))
+	c.Header("Content-Type", "text/plain")
+	c.String(http.StatusCreated, "http://localhost:8080/%s", urlShort)
 }
 
-func GetURL(res http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		http.Error(res, "Only GET method allowed!", http.StatusBadRequest)
+func GetURL(c *gin.Context) {
+	if c.Request.Method != http.MethodGet {
+		c.JSON(http.StatusBadRequest, "Only GET method allowed!")
 		return
 	}
 
-	id := strings.TrimPrefix(req.URL.Path, "/")
+	id := c.Param("id")
+
 	if id != "" {
 		url, ok := urlMap[id]
 		if !ok {
-			http.Error(res, "URL not found!", http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, "URL not found!")
 			return
 		}
 
-	res.Header().Set("Location", url)
-	res.WriteHeader(http.StatusTemporaryRedirect)
+		c.Header("Location", url)
+		c.Redirect(http.StatusTemporaryRedirect, url)
+
 	} else {
-		http.Error(res, "URL is empty!", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, "URL is empty!")
 		return
 	}
 }

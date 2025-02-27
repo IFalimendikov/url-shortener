@@ -1,165 +1,87 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	// "net/url"
-	"strings"
+	// "strings"
 	"testing"
 
-	// "github.com/google/go-containerregistry/pkg/name"
+	// "github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestPostURL(t *testing.T) {
-	type want struct {
-		contentType string
-		status      int
-		body        string
-	}
+func testRequest(t *testing.T, ts *httptest.Server, method, path string, body io.Reader,) (*http.Response, string) {
+	req, err := http.NewRequest(method, ts.URL+path, body)
+	require.NoError(t, err)
 
-	tests := []struct {
-		name    string
-		request string
-		body    string
-		want    want
-	}{
-		{
-			name:    "correct url #1",
-			request: "/",
-			body:    "https://practicum.yandex.ru/",
-			want: want{
-				contentType: "text/plain",
-				status:      201,
-				body:        "http://localhost:8080/4C92",
-			},
-		},
-		{
-			name:    "correct url #2",
-			request: "/",
-			body:    "https://practicum.yandex.at/",
-			want: want{
-				contentType: "text/plain",
-				status:      201,
-				body:        "http://localhost:8080/8OI4",
-			},
-		},
-		{
-			name:    "empty url",
-			request: "/",
-			body:    "",
-			want: want{
-				contentType: "text/plain; charset=utf-8",
-				status:      400,
-				body:        "Empty URL!\n",
-			},
-		},
-		{
-			name:    "mallformed url",
-			request: "/",
-			body:    "practicum.yandex.ru/",
-			want: want{
-				contentType: "text/plain; charset=utf-8",
-				status:      400,
-				body:        "Mallformed URL!\n",
-			},
-		},
-	}
+	resp, err := ts.Client().Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
 
-			w := httptest.NewRecorder()
-
-			PostURL(w, req)
-
-			result := w.Result()
-
-			assert.Equal(t, test.want.status, result.StatusCode)
-			assert.Equal(t, test.want.contentType, result.Header.Get("Content-Type"))
-
-			body, err := io.ReadAll(result.Body)
-			require.NoError(t, err)
-			err = result.Body.Close()
-			require.NoError(t, err)
-
-			assert.Equal(t, test.want.body, string(body))
-		})
-	}
+	return resp, string(respBody)
 }
 
-func TestGetURl(t *testing.T) {
-	type want struct {
-		status int
-		body   string
-		header string
-	}
+func TestPostURL(t *testing.T) {
+    ts := httptest.NewServer(URLRouter())
+    defer ts.Close()
 
-	tests := []struct {
-		name    string
-		request string
-		want    want
-	}{
-		{
-			name:    "correct test #1",
-			request: "http://localhost:8080/4C92",
-			want: want{
-				status: 307,
-				body:   "",
-				header: "https://practicum.yandex.ru/",
-			},
-		},
-		{
-			name:    "correct test #2",
-			request: "http://localhost:8080/8OI4",
-			want: want{
-				status: 307,
-				body:   "",
-				header: "https://practicum.yandex.at/",
-			},
-		},
-		{
-			name:    "incorrect test",
-			request: "http://localhost:8080/91OP",
-			want: want{
-				status: 400,
-				body:   "URL not found!\n",
-				header: "",
-			},
-		},
-		{
-			name:    "empty url",
-			request: "/",
-			want: want{
-				status: 400,
-				body:   "URL is empty!\n",
-				header: "",
-			},
-		},
-	}
+    var testTable = []struct {
+        url    string
+        body   string
+        want   string
+        status int
+    }{
+        {"/postURL", "https://practicum.yandex.ru/", "http://localhost:8080/4C92", http.StatusCreated},
+        {"/postURL", "https://practicum.yandex.at/", "http://localhost:8080/8OI4", http.StatusCreated},
+        {"/postURL", "", "\"Empty body!\"", http.StatusBadRequest},
+        {"/postURL", "practicum.yandex.ru/", "\"Mallformed URI!\"", http.StatusBadRequest},
+    }
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, test.request, nil)
+    for _, test := range testTable {
+        resp, body := testRequest(t, ts, "POST", test.url, bytes.NewReader([]byte(test.body)))
+        assert.Equal(t, test.status, resp.StatusCode)
+        assert.Equal(t, test.want, body)
+    }
+}
 
-			w := httptest.NewRecorder()
+func TestGetURL(t *testing.T) {
+    ts := httptest.NewServer(URLRouter())
+    defer ts.Close()
 
-			GetURL(w, req)
+    client := ts.Client()
+    client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+        return http.ErrUseLastResponse
+    }
 
-			result := w.Result()
+    var testTable = []struct {
+        url    string
+        body   string
+        want   string
+        status int
+    }{
+        {"/getURL/4C92", "", "https://practicum.yandex.ru/", http.StatusTemporaryRedirect},
+        {"/getURL/8OI4", "", "https://practicum.yandex.at/", http.StatusTemporaryRedirect},
+        {"/getURL/91OP", "", "\"URL not found!\"", http.StatusBadRequest},
+    }
 
-			assert.Equal(t, test.want.status, result.StatusCode)
-			assert.Equal(t, test.want.header, result.Header.Get("Location"))
+    // First create the shortened URLs
+    _, _ = testRequest(t, ts, "POST", "/postURL", bytes.NewReader([]byte("https://practicum.yandex.ru/")))
+    _, _ = testRequest(t, ts, "POST", "/postURL", bytes.NewReader([]byte("https://practicum.yandex.at/")))
 
-			body, err := io.ReadAll(result.Body)
-			require.NoError(t, err)
-			err = result.Body.Close()
-			require.NoError(t, err)
+    for _, test := range testTable {
+        resp, body := testRequest(t, ts, "GET", test.url, bytes.NewReader([]byte(test.body)))
+        assert.Equal(t, test.status, resp.StatusCode)
+		if resp.StatusCode == 400 {
+			assert.Equal(t, test.want, body)
+		} else {
+			assert.Equal(t, test.want, resp.Header.Get("Location"))
+		}
 
-			assert.Equal(t, test.want.body, string(body))
-		})
-	}
+    }
 }
