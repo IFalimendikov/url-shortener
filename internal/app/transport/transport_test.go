@@ -1,4 +1,4 @@
-package main
+package transport
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	// "strings"
 	"testing"
+    "url-shortener/internal/app/config"
 
 	// "github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,11 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string, body io
 }
 
 func TestPostURL(t *testing.T) {
-    ts := httptest.NewServer(URLRouter())
+    cfg := config.Config{
+        BaseAddr: "http://localhost:8080/",
+    }
+
+    ts := httptest.NewServer(NewURLRouter(cfg))
     defer ts.Close()
 
     var testTable = []struct {
@@ -52,7 +57,9 @@ func TestPostURL(t *testing.T) {
 }
 
 func TestGetURL(t *testing.T) {
-    ts := httptest.NewServer(URLRouter())
+    cfg := config.Config{}
+
+    ts := httptest.NewServer(NewURLRouter(cfg))
     defer ts.Close()
 
     client := ts.Client()
