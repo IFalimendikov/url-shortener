@@ -53,7 +53,7 @@ func PostURL(c *gin.Context, cfg config.Config) {
 	urlMap[urlShort] = string(body)
 
 	c.Header("Content-Type", "text/plain")
-	c.String(http.StatusCreated, "%s/%s", cfg.BaseAddr, urlShort)
+	c.String(http.StatusCreated, "%s/%s", cfg.BaseURL, urlShort)
 }
 
 func GetURL(c *gin.Context) {

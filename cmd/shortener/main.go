@@ -1,7 +1,6 @@
 package main
 
 import (
-
 	"url-shortener/internal/app/config"
 	"url-shortener/internal/app/transport"
 )
@@ -12,6 +11,5 @@ func main() {
 	config.Read(&cfg)
 
 	r := transport.NewURLRouter(cfg)
-	r.Run(cfg.HTTPAddr)
+	r.Run(cfg.ServerAddr)
 }
-

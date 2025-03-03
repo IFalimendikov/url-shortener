@@ -1,19 +1,28 @@
 package config
 
-import ()
+import (
+	"log"
+
+	env "github.com/caarlos0/env/v11"
+)
 
 type Config struct {
-	HTTPAddr string
-	BaseAddr string
+	ServerAddr string `env:"SERVER_ADDRESS"`
+	BaseURL    string `env:"BASE_URL"`
 }
 
 func Read(cfg *Config) {
 
-	if cfg.HTTPAddr == "" {
-		cfg.HTTPAddr = "localhost:8080"
+	err := env.Parse(cfg)
+	if err != nil {
+        log.Fatal(err)
+    }
+
+	if cfg.ServerAddr == "" {
+		cfg.ServerAddr = "localhost:8080"
 	}
 
-	if cfg.BaseAddr == "" {
-		cfg.BaseAddr = "http://" + cfg.HTTPAddr
+	if cfg.BaseURL == "" {
+		cfg.BaseURL = "http://" + cfg.ServerAddr
 	}
 }
