@@ -14,6 +14,6 @@ func Read(cfg *Config) {
 	}
 
 	if cfg.BaseAddr == "" {
-		cfg.BaseAddr = "http://" + cfg.HTTPAddr + "/"
+		cfg.BaseAddr = "http://" + cfg.HTTPAddr
 	}
 }
