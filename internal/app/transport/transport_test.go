@@ -30,7 +30,7 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string, body io
 
 func TestPostURL(t *testing.T) {
     cfg := config.Config{
-        BaseAddr: "http://localhost:8080/",
+        BaseAddr: "http://localhost:8080",
     }
 
     ts := httptest.NewServer(NewURLRouter(cfg))
