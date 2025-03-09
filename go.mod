@@ -2,7 +2,6 @@ module url-shortener
 
 go 1.23.0
 
-
 require (
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/gin-gonic/gin v1.10.0
