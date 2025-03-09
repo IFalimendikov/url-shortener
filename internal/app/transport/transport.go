@@ -3,71 +3,82 @@ package transport
 import (
 	"io"
 	"net/http"
-	"strings"
+	"sync"
+	"net/url"
 	"url-shortener/internal/app/config"
 
 	"github.com/gin-gonic/gin"
 	base "github.com/jcoene/go-base62"
 )
 
-var urlMap = map[string]string{}
-var counter int
+type Storage struct {
+	urls map[string]string
+	counter int
+	mu sync.RWMutex
+}
 
 func NewURLRouter(cfg config.Config) *gin.Engine {
+	storage := &Storage{
+		urls: make(map[string]string),
+	}
+
 	r := gin.Default()
 
 	r.POST("/", func(c *gin.Context) {
-		PostURL(c, cfg)
+		storage.PostURL(c, cfg)
 	})
-	r.GET("/:id", GetURL)
+	r.GET("/:id", storage.GetURL)
 
 	return r
 }
 
-func PostURL(c *gin.Context, cfg config.Config) {
+func (s *Storage) PostURL(c *gin.Context, cfg config.Config) {
 	if c.Request.Method != http.MethodPost {
-		c.JSON(http.StatusBadRequest, "Only POST method allowed!")
+		c.String(http.StatusBadRequest, "Only POST method allowed!")
 		return
 	}
 
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "Cant read body!")
+		c.String(http.StatusBadRequest, "Cant read body!")
 		return
 	}
 
 	if len(body) == 0 {
-		c.JSON(http.StatusBadRequest, "Empty body!")
+		c.String(http.StatusBadRequest, "Empty body!")
 		return
 	}
 
 	urlStr := string(body)
-	if !strings.HasPrefix(urlStr, "https://") && !strings.HasPrefix(urlStr, "http://") {
-		c.JSON(http.StatusBadRequest, "Mallformed URI!")
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+		c.String(http.StatusBadRequest, "Malformed URI!")
 		return
 	}
 
-	counter++
+	s.mu.Lock()
+	s.counter++
+	urlShort := base.Encode(int64(s.counter))
+	s.urls[urlShort] = urlStr
+	s.mu.Unlock()
 
-	urlShort := base.Encode(int64(counter * 1000000))
-	urlMap[urlShort] = string(body)
-
-	c.Header("Content-Type", "text/plain")
 	c.String(http.StatusCreated, "%s/%s", cfg.BaseURL, urlShort)
 }
 
-func GetURL(c *gin.Context) {
+func (s *Storage) GetURL(c *gin.Context) {
 	if c.Request.Method != http.MethodGet {
-		c.JSON(http.StatusBadRequest, "Only GET method allowed!")
+		c.String(http.StatusBadRequest, "Only GET method allowed!")
 		return
 	}
 
 	id := c.Param("id")
 
 	if id != "" {
-		url, ok := urlMap[id]
+		s.mu.RLock()
+		url, ok := s.urls[id]
+		s.mu.RUnlock()
 		if !ok {
-			c.JSON(http.StatusBadRequest, "URL not found!")
+			c.String(http.StatusBadRequest, "URL not found!")
 			return
 		}
 
@@ -75,7 +86,7 @@ func GetURL(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, url)
 
 	} else {
-		c.JSON(http.StatusBadRequest, "URL is empty!")
+		c.String(http.StatusBadRequest, "URL is empty!")
 		return
 	}
 }

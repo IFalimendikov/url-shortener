@@ -43,10 +43,10 @@ func TestPostURL(t *testing.T) {
 		want   string
 		status int
 	}{
-		{"/", "https://practicum.yandex.ru/", "http://localhost:8080/4C92", http.StatusCreated},
-		{"/", "https://practicum.yandex.at/", "http://localhost:8080/8OI4", http.StatusCreated},
-		{"/", "", "\"Empty body!\"", http.StatusBadRequest},
-		{"/", "practicum.yandex.ru/", "\"Mallformed URI!\"", http.StatusBadRequest},
+		{"/", "https://practicum.yandex.ru/", "http://localhost:8080/1", http.StatusCreated},
+		{"/", "https://practicum.yandex.at/", "http://localhost:8080/2", http.StatusCreated},
+		{"/", "", "Empty body!", http.StatusBadRequest},
+		{"/", "practicum.yandex.ru/", "Malformed URI!", http.StatusBadRequest},
 	}
 
 	for _, test := range testTable {
@@ -74,15 +74,15 @@ func TestGetURL(t *testing.T) {
 		want   string
 		status int
 	}{
-		{"/4C92", "", "https://practicum.yandex.ru/", http.StatusTemporaryRedirect},
-		{"/8OI4", "", "https://practicum.yandex.at/", http.StatusTemporaryRedirect},
-		{"/91OP", "", "\"URL not found!\"", http.StatusBadRequest},
+		{"/1", "", "https://practicum.yandex.ru/", http.StatusTemporaryRedirect},
+		{"/2", "", "https://practicum.yandex.at/", http.StatusTemporaryRedirect},
+		{"/3", "", "URL not found!", http.StatusBadRequest},
 	}
 
 	// First create the shortened URLs
-	resp, _ := testRequest(t, ts, "POST", "/postURL", bytes.NewReader([]byte("https://practicum.yandex.ru/")))
+	resp, _ := testRequest(t, ts, "POST", "/", bytes.NewReader([]byte("https://practicum.yandex.ru/")))
 	defer resp.Body.Close()
-	resp, _ = testRequest(t, ts, "POST", "/postURL", bytes.NewReader([]byte("https://practicum.yandex.at/")))
+	resp, _ = testRequest(t, ts, "POST", "/", bytes.NewReader([]byte("https://practicum.yandex.at/")))
 	defer resp.Body.Close()
 
 	for _, test := range testTable {
