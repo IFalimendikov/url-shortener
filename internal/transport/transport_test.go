@@ -8,11 +8,13 @@ import (
 
 	// "strings"
 	"testing"
-	"url-shortener/internal/app/config"
+	"url-shortener/internal/config"
 
 	// "github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"url-shortener/internal/services"
+	"url-shortener/internal/logger"
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path string, body io.Reader) (*http.Response, string) {
@@ -34,7 +36,13 @@ func TestPostURL(t *testing.T) {
 		BaseURL: "http://localhost:8080",
 	}
 
-	ts := httptest.NewServer(NewURLRouter(cfg))
+	log := logger.NewLogger()
+
+	s := services.NewURLService(log)
+
+	tr := NewTransport(cfg, s, log)
+
+	ts := httptest.NewServer(NewRouter(cfg, tr))
 	defer ts.Close()
 
 	var testTable = []struct {
@@ -58,9 +66,17 @@ func TestPostURL(t *testing.T) {
 }
 
 func TestGetURL(t *testing.T) {
-	cfg := config.Config{}
+	cfg := config.Config{
+		BaseURL: "http://localhost:8080",
+	}
 
-	ts := httptest.NewServer(NewURLRouter(cfg))
+	log := logger.NewLogger()
+
+	s := services.NewURLService(log)
+
+	tr := NewTransport(cfg, s, log)
+
+	ts := httptest.NewServer(NewRouter(cfg, tr))
 	defer ts.Close()
 
 	client := ts.Client()

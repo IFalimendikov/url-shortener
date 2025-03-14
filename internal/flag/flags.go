@@ -1,9 +1,9 @@
-package main
+package flag
 
 import (
 	"flag"
 
-	"url-shortener/internal/app/config"
+	"url-shortener/internal/config"
 )
 
 func ParseFlags() config.Config {
