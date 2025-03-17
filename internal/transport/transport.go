@@ -105,27 +105,25 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 }
 
 func (t *Transport) GetURL(c *gin.Context) {
-	if c.Request.Method != http.MethodGet {
-		c.String(http.StatusBadRequest, "Only GET method allowed!")
-		return
-	}
+    if c.Request.Method != http.MethodGet {
+        c.String(http.StatusBadRequest, "Only GET method allowed!")
+        return
+    }
 
-	id := c.Param("id")
+    id := c.Param("id")
+    if id == "" {
+        c.String(http.StatusBadRequest, "URL is empty!")
+        return
+    }
 
-	if id != "" {
-		url, err := t.serviceURL.ServGet(id)
-		if err != nil {
-			c.String(http.StatusBadRequest, "URL not found!")
-			return
-		}
+    url, err := t.serviceURL.ServGet(id)
+    if err != nil {
+        c.String(http.StatusNotFound, "URL not found!")
+        return
+    }
 
-		c.Header("Location", url)
-		c.Redirect(http.StatusTemporaryRedirect, url)
-
-	} else {
-		c.String(http.StatusBadRequest, "URL is empty!")
-		return
-	}
+    c.Header("Location", url)
+    c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
 func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
