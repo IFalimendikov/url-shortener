@@ -112,7 +112,7 @@ func TestGetURL(t *testing.T) {
 	}
 }
 
-func TestShortenURl(t *testing.T) {
+func TestShortenURL(t *testing.T) {
 	cfg := config.Config{
 		BaseURL: "http://localhost:8080",
 	}
