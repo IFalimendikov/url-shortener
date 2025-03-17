@@ -41,7 +41,7 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 	})	
 
 	r.POST("/api/shorten", func(c *gin.Context) {
-		t.ShortenURl(c, cfg)
+		t.ShortenURL(c, cfg)
 	})
 
 	r.GET("/:id", t.GetURL)
@@ -128,7 +128,7 @@ func (t *Transport) GetURL(c *gin.Context) {
 	}
 }
 
-func (t *Transport) ShortenURl(c *gin.Context, cfg config.Config) {
+func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 	var req *ShortenURLRequest
 	var res ShortneURLResponse
 
