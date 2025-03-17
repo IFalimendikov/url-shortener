@@ -5,16 +5,14 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-
-	// "strings"
 	"testing"
+	"encoding/json"
 	"url-shortener/internal/config"
+	"url-shortener/internal/logger"
+	"url-shortener/internal/services"
 
-	// "github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"url-shortener/internal/services"
-	"url-shortener/internal/logger"
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path string, body io.Reader) (*http.Response, string) {
@@ -111,5 +109,44 @@ func TestGetURL(t *testing.T) {
 			assert.Equal(t, test.want, resp.Header.Get("Location"))
 		}
 
+	}
+}
+
+func TestShortenURl(t *testing.T) {
+	cfg := config.Config{
+		BaseURL: "http://localhost:8080",
+	}
+
+	log := logger.NewLogger()
+
+	s := services.NewURLService(log)
+
+	tr := NewTransport(cfg, s, log)
+
+	ts := httptest.NewServer(NewRouter(cfg, tr))
+	defer ts.Close()
+
+	var testTable = []struct {
+		url    string
+		body   string
+		want   string
+		status int
+	}{
+		{"/api/shorten", "https://practicum.yandex.ru/", "{\"result\":\"http://localhost:8080/1\"}", http.StatusCreated},
+		{"/api/shorten", "https://practicum.yandex.at/", "{\"result\":\"http://localhost:8080/2\"}", http.StatusCreated},
+		{"/api/shorten", "", "Empty body!", http.StatusBadRequest},
+	}
+
+	for _, test := range testTable {
+		req := ShortenURLRequest{
+			URL: test.body,
+		}
+
+		reqPayload, _ := json.Marshal(req)
+		
+		resp, body := testRequest(t, ts, "POST", test.url, bytes.NewReader(reqPayload))
+		defer resp.Body.Close()
+		assert.Equal(t, test.status, resp.StatusCode)
+		assert.Equal(t, test.want, body)
 	}
 }

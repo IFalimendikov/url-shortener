@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,19 +13,20 @@ import (
 )
 
 type URLService interface {
-	ShortenURL(url string) (string, error)
-	GetOriginalURL(shortURL string) (string, error)
+	ServShort(url string) (string, error)
+	ServSave(url string) (string, error)
+	ServGet(shortURL string) (string, error)
 }
 
 type Transport struct {
 	serviceURL URLService
-	log *zap.SugaredLogger
+	log        *zap.SugaredLogger
 }
 
 func NewTransport(cfg config.Config, s URLService, log *zap.SugaredLogger) Transport {
 	return Transport{
 		serviceURL: s,
-		log: log,
+		log:        log,
 	}
 }
 
@@ -36,7 +38,12 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 
 	r.POST("/", func(c *gin.Context) {
 		t.PostURL(c, cfg)
+	})	
+
+	r.POST("/api/shorten", func(c *gin.Context) {
+		t.ShortenURl(c, cfg)
 	})
+
 	r.GET("/:id", t.GetURL)
 
 	return r
@@ -49,18 +56,18 @@ func WithLogging(log *zap.SugaredLogger) gin.HandlerFunc {
 		method := c.Request.Method
 
 		c.Next()
-		
+
 		status := c.Writer.Status()
 		size := c.Writer.Size()
 
-		latency :=  time.Since(start)
+		latency := time.Since(start)
 		log.Infoln(
-            "uri", uri,
-            "method", method,
-            "duration", latency,
+			"uri", uri,
+			"method", method,
+			"duration", latency,
 			"status", status,
 			"size", size,
-        )
+		)
 	}
 }
 
@@ -88,7 +95,7 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	shortURL, err := t.serviceURL.ShortenURL(urlStr)
+	shortURL, err := t.serviceURL.ServSave(urlStr)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Couldn't encode URL!")
 		return
@@ -106,7 +113,7 @@ func (t *Transport) GetURL(c *gin.Context) {
 	id := c.Param("id")
 
 	if id != "" {
-		url, err := t.serviceURL.GetOriginalURL(id)
+		url, err := t.serviceURL.ServGet(id)
 		if err != nil {
 			c.String(http.StatusBadRequest, "URL not found!")
 			return
@@ -119,4 +126,41 @@ func (t *Transport) GetURL(c *gin.Context) {
 		c.String(http.StatusBadRequest, "URL is empty!")
 		return
 	}
+}
+
+func (t *Transport) ShortenURl(c *gin.Context, cfg config.Config) {
+	var req *ShortenURLRequest
+	var res ShortneURLResponse
+
+	if c.Request.Method != http.MethodPost {
+		c.String(http.StatusBadRequest, "Only POST method allowed!")
+		return
+	}
+
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Cant read body!")
+		return
+	}
+
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Couldn't unmarshal!")
+		return
+	}
+
+	if req.URL == "" {
+		c.String(http.StatusBadRequest, "Empty body!")
+		return
+	}
+
+	shortURL, err := t.serviceURL.ServShort(req.URL)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Couldn't encode URL!")
+		return
+	}
+
+	res.Result = cfg.BaseURL + "/" + shortURL
+
+	c.JSON(http.StatusCreated, res)
 }

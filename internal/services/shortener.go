@@ -4,41 +4,51 @@ import (
 	"fmt"
 	"sync"
 
-    "go.uber.org/zap"
 	base "github.com/jcoene/go-base62"
+	"go.uber.org/zap"
 )
 
 type URLService interface {
-    ShortenURL(url string) (string, error)
-    GetOriginalURL(shortURL string) (string, error)
+	ServShort(url string) (string, error)
+	ServSave(url string) (string, error)
+	ServGet(shortURL string) (string, error)
 }
 
 type URLStorage struct {
-    urls    map[string]string
-    counter int
-    mu      sync.RWMutex
-    log     zap.SugaredLogger
+	urls    map[string]string
+	counter int
+	mu      sync.RWMutex
+	log     zap.SugaredLogger
 }
 
 func NewURLService(log *zap.SugaredLogger) *URLStorage {
-    service := &URLStorage{
-        urls: make(map[string]string),
-        log: *log,
-    }
-    return service
+	service := &URLStorage{
+		urls: make(map[string]string),
+		log:  *log,
+	}
+	return service
 }
 
-func (s *URLStorage) ShortenURL(url string) (string, error) {
-    s.mu.Lock()
-    s.counter++
-    urlShort := base.Encode(int64(s.counter))
-    s.urls[urlShort] = url
-    s.mu.Unlock()
+func (s *URLStorage) ServSave(url string) (string, error) {
+	s.mu.Lock()
+	s.counter++
+	urlShort := base.Encode(int64(s.counter))
+	s.urls[urlShort] = url
+	s.mu.Unlock()
 
-    return urlShort, nil
+	return urlShort, nil
 }
 
-func (s *URLStorage) GetOriginalURL(shortURL string) (string, error) {
+func (s *URLStorage) ServShort(url string) (string, error) {
+	s.mu.Lock()
+	s.counter++
+	urlShort := base.Encode(int64(s.counter))
+	s.mu.Unlock()
+
+	return urlShort, nil
+}
+
+func (s *URLStorage) ServGet(shortURL string) (string, error) {
 	s.mu.RLock()
 	url, ok := s.urls[shortURL]
 	s.mu.RUnlock()
