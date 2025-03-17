@@ -154,7 +154,7 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	shortURL, err := t.serviceURL.ServShort(req.URL)
+	shortURL, err := t.serviceURL.ServSave(req.URL)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Couldn't encode URL!")
 		return

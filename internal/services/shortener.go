@@ -39,15 +39,6 @@ func (s *URLStorage) ServSave(url string) (string, error) {
 	return urlShort, nil
 }
 
-func (s *URLStorage) ServShort(url string) (string, error) {
-	s.mu.Lock()
-	s.counter++
-	urlShort := base.Encode(int64(s.counter))
-	s.mu.Unlock()
-
-	return urlShort, nil
-}
-
 func (s *URLStorage) ServGet(shortURL string) (string, error) {
 	s.mu.RLock()
 	url, ok := s.urls[shortURL]
