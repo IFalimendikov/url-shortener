@@ -13,7 +13,6 @@ import (
 )
 
 type URLService interface {
-	ServShort(url string) (string, error)
 	ServSave(url string) (string, error)
 	ServGet(shortURL string) (string, error)
 }
