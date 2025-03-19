@@ -1,6 +1,8 @@
 package transport
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -22,6 +24,11 @@ type Transport struct {
 	log        *zap.SugaredLogger
 }
 
+type gzipWriter struct {
+	gin.ResponseWriter
+	gzip *gzip.Writer
+}
+
 func NewTransport(cfg config.Config, s URLService, log *zap.SugaredLogger) Transport {
 	return Transport{
 		serviceURL: s,
@@ -34,10 +41,12 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 	r := gin.Default()
 
 	r.Use(WithLogging(t.log))
+	r.Use(WithDecodingReq())
+	r.Use(WithEncodingRes())
 
 	r.POST("/", func(c *gin.Context) {
 		t.PostURL(c, cfg)
-	})	
+	})
 
 	r.POST("/api/shorten", func(c *gin.Context) {
 		t.ShortenURL(c, cfg)
@@ -67,6 +76,56 @@ func WithLogging(log *zap.SugaredLogger) gin.HandlerFunc {
 			"status", status,
 			"size", size,
 		)
+		c.Next()
+	}
+}
+
+func WithDecodingReq() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		header := c.Request.Header.Get("Content-Encoding")
+		if header != "gzip" {
+			c.Next()
+			return
+		}
+
+		r, err := gzip.NewReader(c.Request.Body)
+		if err != nil {
+			c.Next()
+			return
+		}
+		defer r.Close()
+
+		newBody, err := io.ReadAll(r)
+		if err != nil {
+			c.Next()
+			return
+		}
+		c.Request.Body = io.NopCloser(bytes.NewReader(newBody))
+		c.Next()
+	}
+}
+
+func WithEncodingRes() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		header := c.Request.Header.Get("Accept-Encoding")
+		if header != "gzip" {
+			c.Next()
+			return
+		}
+
+		header = c.Writer.Header().Get("Content-Type")
+		if header == "application/json" || header == "text/html" {
+			gz := gzip.NewWriter(c.Writer)
+			defer gz.Close()
+
+			c.Header("Content-Encoding", "gzip")
+
+			c.Writer = gzipWriter{
+				ResponseWriter: c.Writer,
+				gzip:           gz,
+			}
+		}
+		c.Next()
 	}
 }
 
