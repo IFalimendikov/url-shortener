@@ -9,7 +9,7 @@ import (
 type Config struct {
 	ServerAddr  string `env:"SERVER_ADDRESS"`
 	BaseURL     string `env:"BASE_URL"`
-	StoragePath string `env:"STORAGE_PATH"`
+	StoragePath string `env:"FILE_STORAGE_PATH"`
 }
 
 func Read(cfg *Config) {
