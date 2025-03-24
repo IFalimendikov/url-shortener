@@ -28,6 +28,6 @@ func Read(cfg *Config) {
 	}
 
 	if cfg.StoragePath == "" {
-		cfg.StoragePath = "urls"
+		cfg.StoragePath = "urls.json"
 	}
 }
