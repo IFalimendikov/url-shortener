@@ -7,8 +7,9 @@ import (
 )
 
 type Config struct {
-	ServerAddr string `env:"SERVER_ADDRESS"`
-	BaseURL    string `env:"BASE_URL"`
+	ServerAddr  string `env:"SERVER_ADDRESS"`
+	BaseURL     string `env:"BASE_URL"`
+	StoragePath string `env:"STORAGE_PATH"`
 }
 
 func Read(cfg *Config) {
@@ -24,5 +25,9 @@ func Read(cfg *Config) {
 
 	if cfg.BaseURL == "" {
 		cfg.BaseURL = "http://" + cfg.ServerAddr
+	}
+
+	if cfg.StoragePath == "" {
+		cfg.StoragePath = "urls"
 	}
 }

@@ -218,7 +218,7 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	res.Result = cfg.BaseURL + "/" + shortURL
+	res.Result = cfg.BaseURL + "/" + string(shortURL)
 
 	c.JSON(http.StatusCreated, res)
 }

@@ -1,49 +1,69 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
+	"url-shortener/internal/storage"
 
-	base "github.com/jcoene/go-base62"
+	"github.com/deatil/go-encoding/base62"
 	"go.uber.org/zap"
 )
 
 type URLService interface {
 	ServSave(url string) (string, error)
-	ServGet(shortURL string) (string, error)
+	ServGet(shortURL []byte) (string, error)
 }
 
 type URLStorage struct {
-	urls    map[string]string
-	counter int
-	mu      sync.RWMutex
-	log     zap.SugaredLogger
+	MU      sync.RWMutex
+	Log     *zap.SugaredLogger
+	Storage *storage.Storage
+	Encoder *json.Encoder
+	Base    *base62.Encoding
 }
 
-func NewURLService(log *zap.SugaredLogger) *URLStorage {
+func NewURLService(log *zap.SugaredLogger, storage *storage.Storage) *URLStorage {
 	service := &URLStorage{
-		urls: make(map[string]string),
-		log:  *log,
+		Storage: storage,
+		Log:     log,
+		Encoder: json.NewEncoder(&storage.File),
+		Base:    base62.NewEncoding("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"),
 	}
 	return service
 }
 
 func (s *URLStorage) ServSave(url string) (string, error) {
-	s.mu.Lock()
-	s.counter++
-	urlShort := base.Encode(int64(s.counter))
-	s.urls[urlShort] = url
-	s.mu.Unlock()
+	short := s.Base.EncodeToString([]byte(url))
 
-	return urlShort, nil
+	rec := storage.URLRecord{
+		ID:       s.Storage.Count,
+		ShortURL: short,
+		URL:      url,
+	}
+
+	_, ok := s.Storage.URLs[rec.ShortURL]
+	if !ok {
+		s.MU.Lock()
+		err := s.Encoder.Encode(rec)
+		if err != nil {
+			return "", err
+		}
+
+		s.Storage.URLs[rec.ShortURL] = rec
+		s.Storage.Count++
+		s.MU.Unlock()
+	}
+
+	return short, nil
 }
 
 func (s *URLStorage) ServGet(shortURL string) (string, error) {
-	s.mu.RLock()
-	url, ok := s.urls[shortURL]
-	s.mu.RUnlock()
+	s.MU.RLock()
+	url, ok := s.Storage.URLs[shortURL]
+	s.MU.RUnlock()
 	if ok {
-		return url, nil
+		return url.URL, nil
 	} else {
 		return "", fmt.Errorf("URL not found")
 	}
