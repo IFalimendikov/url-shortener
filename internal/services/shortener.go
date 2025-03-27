@@ -74,6 +74,6 @@ func (s *URLStorage) ServGet(shortURL string) (string, error) {
 }
 
 func (s *URLStorage) PingDB () bool {
-	err := s.Storage.DB.Ping(s.Context)
+	err := s.Storage.DB.Ping()
 	return err != nil
 }

@@ -13,7 +13,7 @@ import (
 
 type Storage struct {
 	cfg   *config.Config
-	DB    sql.DB
+	DB    *sql.DB
 	File  os.File
 	Count uint
 	URLs  map[string]URLRecord
@@ -72,7 +72,7 @@ func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
 		File:  *file,
 		Count: count,
 		URLs:  urls,
-		DB:    *db,
+		DB:    db,
 	}
 
 	return &storage, err
