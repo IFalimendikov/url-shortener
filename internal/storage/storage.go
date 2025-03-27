@@ -7,12 +7,13 @@ import (
 	"os"
 	"url-shortener/internal/config"
 
-	"github.com/jackc/pgx/v5"
+	"database/sql"
+	_ "github.com/jackc/pgx/v5"
 )
 
 type Storage struct {
 	cfg   *config.Config
-	DB    pgx.Conn
+	DB    sql.DB
 	File  os.File
 	Count uint
 	URLs  map[string]URLRecord
@@ -60,8 +61,11 @@ func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
 		}
 	}
 
-	db, _ := pgx.Connect(ctx, cfg.DBAddress)
-	defer db.Close(ctx)
+	db, err := sql.Open("pgx", cfg.DBAddress)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
 
 	storage := Storage{
 		cfg:   cfg,
