@@ -2,12 +2,13 @@ package transport
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"io"
-	"os"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
-	"encoding/json"
 	"url-shortener/internal/config"
 	"url-shortener/internal/logger"
 	"url-shortener/internal/services"
@@ -42,10 +43,10 @@ func TestPostURL(t *testing.T) {
 	}
 
 	log := logger.NewLogger()
-	storage, _ := storage.NewStorage(&cfg)
+	storage, _ := storage.NewStorage(context.Background(),&cfg)
 	defer storage.File.Close()
 
-	s := services.NewURLService(log, storage)
+	s := services.NewURLService(context.Background(), log, storage)
 
 	t.Cleanup(func() {
 		os.RemoveAll("test_storage")
@@ -87,9 +88,9 @@ func TestGetURL(t *testing.T) {
 	}
 
 	log := logger.NewLogger()
-	storage, _ := storage.NewStorage(&cfg)
+	storage, _ := storage.NewStorage(context.Background(), &cfg)
 	defer storage.File.Close()
-	s := services.NewURLService(log, storage)
+	s := services.NewURLService(context.Background(), log, storage)
 
 	tr := NewTransport(cfg, s, log)
 
@@ -142,10 +143,10 @@ func TestShortenURL(t *testing.T) {
 	}
 
 	log := logger.NewLogger()
-	storage, _ := storage.NewStorage(&cfg)
+	storage, _ := storage.NewStorage(context.Background(), &cfg)
 	defer storage.File.Close()
 
-	s := services.NewURLService(log, storage)
+	s := services.NewURLService(context.Background(), log, storage)
 
 	tr := NewTransport(cfg, s, log)
 

@@ -7,12 +7,12 @@ import (
 )
 
 func ParseFlags() config.Config {
-	config := config.Config{}
+	cfg := config.Config{}
 
-	flag.StringVar(&config.ServerAddr, "a", config.ServerAddr, "HTTP server host address")
-	flag.StringVar(&config.BaseURL, "b", config.BaseURL, "Base HTTP address returned before short URL")
-	flag.StringVar(&config.StoragePath, "f", config.StoragePath, "Storage file path for URLs")
-	flag.Parse()
+	flag.StringVar(&cfg.ServerAddr, "a", cfg.ServerAddr, "HTTP server host address")
+	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base HTTP address returned before short URL")
+	flag.StringVar(&cfg.StoragePath, "f", cfg.StoragePath, "Storage file path for URLs")
+	flag.StringVar(&cfg.DBAddress, "d", cfg.DBAddress, "Database connection.")
 
-	return config
+	return cfg
 }

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -13,9 +14,11 @@ import (
 type URLService interface {
 	ServSave(url string) (string, error)
 	ServGet(shortURL []byte) (string, error)
+	PingDB() bool
 }
 
 type URLStorage struct {
+	Context context.Context
 	MU      sync.RWMutex
 	Log     *zap.SugaredLogger
 	Storage *storage.Storage
@@ -23,8 +26,9 @@ type URLStorage struct {
 	Base    *base62.Encoding
 }
 
-func NewURLService(log *zap.SugaredLogger, storage *storage.Storage) *URLStorage {
+func NewURLService(ctx context.Context, log *zap.SugaredLogger, storage *storage.Storage) *URLStorage {
 	service := &URLStorage{
+		Context: ctx,
 		Storage: storage,
 		Log:     log,
 		Encoder: json.NewEncoder(&storage.File),
@@ -67,4 +71,13 @@ func (s *URLStorage) ServGet(shortURL string) (string, error) {
 	} else {
 		return "", fmt.Errorf("URL not found")
 	}
+}
+
+func (s *URLStorage) PingDB () bool {
+	err := s.Storage.DB.Ping(s.Context)
+	if err != nil {
+		return true
+	}
+
+	return false
 }

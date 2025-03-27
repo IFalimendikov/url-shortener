@@ -2,13 +2,17 @@ package storage
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"os"
 	"url-shortener/internal/config"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type Storage struct {
 	cfg   *config.Config
+	DB    pgx.Conn
 	File  os.File
 	Count uint
 	URLs  map[string]URLRecord
@@ -20,7 +24,7 @@ type URLRecord struct {
 	URL      string `json:"original_url"`
 }
 
-func NewStorage(cfg *config.Config) (*Storage, error) {
+func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
 	file, err := os.OpenFile(cfg.StoragePath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return nil, err
@@ -33,10 +37,10 @@ func NewStorage(cfg *config.Config) (*Storage, error) {
 	}
 
 	_, err = file.Seek(0, 0)
-    if err != nil {
-        file.Close()
-        return nil, err
-    }
+	if err != nil {
+		file.Close()
+		return nil, err
+	}
 
 	urls := make(map[string]URLRecord)
 	records := []URLRecord{}
@@ -56,11 +60,18 @@ func NewStorage(cfg *config.Config) (*Storage, error) {
 		}
 	}
 
+	db, err := pgx.Connect(ctx, cfg.DBAddress)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close(ctx)
+
 	storage := Storage{
 		cfg:   cfg,
 		File:  *file,
 		Count: count,
 		URLs:  urls,
+		DB:    *db,
 	}
 
 	return &storage, err

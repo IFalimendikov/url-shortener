@@ -1,12 +1,13 @@
 package main
 
 import (
+	"context"
 	"url-shortener/internal/config"
 	"url-shortener/internal/flag"
-	"url-shortener/internal/services"
-	"url-shortener/internal/transport"
 	"url-shortener/internal/logger"
+	"url-shortener/internal/services"
 	"url-shortener/internal/storage"
+	"url-shortener/internal/transport"
 )
 
 func main() {
@@ -14,11 +15,13 @@ func main() {
 	config.Read(&cfg)
 	log := logger.NewLogger()
 
-	store, err := storage.NewStorage(&cfg)
+	ctx := context.Background()
+
+	store, err := storage.NewStorage(ctx, &cfg)
 	if err != nil {
 		log.Fatalf("Error creating new storage:%s", err)
 	}
-	s := services.NewURLService(log, store)
+	s := services.NewURLService(ctx, log, store)
 
 	t := transport.NewTransport(cfg, s, log)
 	r := transport.NewRouter(cfg, t)

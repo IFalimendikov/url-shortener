@@ -17,6 +17,7 @@ import (
 type URLService interface {
 	ServSave(url string) (string, error)
 	ServGet(shortURL string) (string, error)
+	PingDB() bool
 }
 
 type Transport struct {
@@ -53,6 +54,7 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 	})
 
 	r.GET("/:id", t.GetURL)
+	r.GET("/ping", t.PingDB)
 
 	return r
 }
@@ -221,4 +223,20 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 	res.Result = cfg.BaseURL + "/" + string(shortURL)
 
 	c.JSON(http.StatusCreated, res)
+}
+
+func (t *Transport)  PingDB (c *gin.Context) {
+	if c.Request.Method != http.MethodGet {
+		c.String(http.StatusBadRequest, "Only GET method allowed!")
+		return
+	}
+
+	live := t.serviceURL.PingDB()
+
+	if live {
+		c.String(http.StatusOK, "Live")
+		return
+	}
+
+	c.String(http.StatusInternalServerError, "Can't connect to the Database!")
 }
