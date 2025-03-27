@@ -60,10 +60,7 @@ func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
 		}
 	}
 
-	db, err := pgx.Connect(ctx, cfg.DBAddress)
-	if err != nil {
-		return nil, err
-	}
+	db, _ := pgx.Connect(ctx, cfg.DBAddress)
 	defer db.Close(ctx)
 
 	storage := Storage{
