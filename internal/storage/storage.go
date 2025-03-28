@@ -77,3 +77,8 @@ func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
 
 	return &storage, err
 }
+
+func (s *Storage) InitTables() error {
+	_, err := s.DB.Exec(CreateShortURLTable)
+	return err
+}

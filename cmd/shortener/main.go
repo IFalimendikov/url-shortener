@@ -16,10 +16,14 @@ func main() {
 	log := logger.NewLogger()
 
 	ctx := context.Background()
-
+	
 	store, err := storage.NewStorage(ctx, &cfg)
 	if err != nil {
 		log.Fatalf("Error creating new storage:%s", err)
+	}
+	err = store.InitTables()
+	if err != nil {
+		log.Fatalf("Error creating tables:%s", err)
 	}
 	s := services.NewURLService(ctx, log, store)
 
