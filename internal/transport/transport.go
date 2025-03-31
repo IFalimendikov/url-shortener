@@ -189,7 +189,7 @@ func (t *Transport) GetURL(c *gin.Context) {
 }
 
 func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
-	var req *ShortenURLRequest
+	var req ShortenURLRequest
 	var res ShortneURLResponse
 
 	if c.Request.Method != http.MethodPost {
@@ -232,7 +232,6 @@ func (t *Transport)  PingDB (c *gin.Context) {
 	}
 
 	live := t.serviceURL.PingDB()
-
 	if live {
 		c.String(http.StatusOK, "Live")
 		return
