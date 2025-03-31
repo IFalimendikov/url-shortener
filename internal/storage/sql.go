@@ -8,7 +8,7 @@ var CreateShortURLTable = `
 	);`
 
 var GetURL = `
-	SELECT short_url, url 
+	SELECT url 
 	FROM urls 
-	WHERE short_url = $1"
+	WHERE short_url = $1
 `
