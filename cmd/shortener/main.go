@@ -21,7 +21,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating new storage:%s", err)
 	}
-	err = store.InitTables()
+	defer store.DB.Close()
+
 	if err != nil {
 		log.Fatalf("Error creating tables:%s", err)
 	}

@@ -65,7 +65,7 @@ func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
+	_, err = db.Exec(CreateShortURLTable)
 
 	storage := Storage{
 		cfg:   cfg,
@@ -76,9 +76,4 @@ func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
 	}
 
 	return &storage, err
-}
-
-func (s *Storage) InitTables() error {
-	_, err := s.DB.Exec(CreateShortURLTable)
-	return err
 }
