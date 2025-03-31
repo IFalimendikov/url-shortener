@@ -4,6 +4,6 @@ type ShortenURLRequest struct {
 	URL string `json:"url"`
 }
 
-type ShortneURLResponse struct {
+type ShortenURLResponse struct {
 	Result string `json:"result"`
 }

@@ -34,7 +34,6 @@ func NewStorage(cfg *config.Config) (*Storage, error) {
 
 	_, err = file.Seek(0, 0)
     if err != nil {
-        file.Close()
         return nil, err
     }
 
@@ -42,14 +41,8 @@ func NewStorage(cfg *config.Config) (*Storage, error) {
 	records := []URLRecord{}
 
 	if count > 0 {
-		r := bufio.NewReader(file)
-
-		urlsEncoded, err := r.ReadBytes('\n')
-		if err != nil {
-			return nil, err
-		}
-
-		json.Unmarshal(urlsEncoded, &records)
+		dec := json.NewDecoder(file)
+		dec.Decode(&records)
 
 		for _, record := range records {
 			urls[record.URL] = record

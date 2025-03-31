@@ -13,11 +13,14 @@ func main() {
 	cfg := flag.ParseFlags()
 	config.Read(&cfg)
 	log := logger.NewLogger()
+	defer log.Sync()
 
 	store, err := storage.NewStorage(&cfg)
 	if err != nil {
 		log.Fatalf("Error creating new storage:%s", err)
 	}
+	defer store.File.Close()
+	
 	s := services.NewURLService(log, store)
 
 	t := transport.NewTransport(cfg, s, log)

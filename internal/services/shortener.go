@@ -2,7 +2,7 @@ package services
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"sync"
 	"url-shortener/internal/storage"
 
@@ -10,9 +10,13 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	ErrURLNotFound = errors.New("URL not found")
+)
+
 type URLService interface {
 	ServSave(url string) (string, error)
-	ServGet(shortURL []byte) (string, error)
+	ServGet(shortURL string) (string, error)
 }
 
 type URLStorage struct {
@@ -20,7 +24,6 @@ type URLStorage struct {
 	Log     *zap.SugaredLogger
 	Storage *storage.Storage
 	Encoder *json.Encoder
-	Base    *base62.Encoding
 }
 
 func NewURLService(log *zap.SugaredLogger, storage *storage.Storage) *URLStorage {
@@ -28,13 +31,12 @@ func NewURLService(log *zap.SugaredLogger, storage *storage.Storage) *URLStorage
 		Storage: storage,
 		Log:     log,
 		Encoder: json.NewEncoder(&storage.File),
-		Base:    base62.NewEncoding("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"),
 	}
 	return service
 }
 
 func (s *URLStorage) ServSave(url string) (string, error) {
-	short := s.Base.EncodeToString([]byte(url))
+	short := base62.StdEncoding.EncodeToString([]byte(url))
 
 	rec := storage.URLRecord{
 		ID:       s.Storage.Count,
@@ -65,6 +67,6 @@ func (s *URLStorage) ServGet(shortURL string) (string, error) {
 	if ok {
 		return url.URL, nil
 	} else {
-		return "", fmt.Errorf("URL not found")
+		return "", ErrURLNotFound
 	}
 }

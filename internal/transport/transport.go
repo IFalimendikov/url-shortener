@@ -187,8 +187,8 @@ func (t *Transport) GetURL(c *gin.Context) {
 }
 
 func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
-	var req *ShortenURLRequest
-	var res ShortneURLResponse
+	var req ShortenURLRequest
+	var res ShortenURLResponse
 
 	if c.Request.Method != http.MethodPost {
 		c.String(http.StatusBadRequest, "Only POST method allowed!")
