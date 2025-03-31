@@ -61,11 +61,14 @@ func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
 		}
 	}
 
-	db, err := sql.Open("pgx", cfg.DBAddress)
-	if err != nil {
-		return nil, err
+	var db *sql.DB
+	if cfg.DBAddress != "" {
+		db, err = sql.Open("pgx", cfg.DBAddress)
+		if err != nil {
+			return nil, err
+		}
+		_, err = db.Exec(CreateShortURLTable)
 	}
-	_, err = db.Exec(CreateShortURLTable)
 
 	storage := Storage{
 		cfg:   cfg,
