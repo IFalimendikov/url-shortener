@@ -67,6 +67,11 @@ func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		err = db.Ping()
+		if err != nil {
+			return nil, err
+		}
 		_, err = db.Exec(CreateShortURLTable)
 	}
 
