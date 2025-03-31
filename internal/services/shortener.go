@@ -63,12 +63,10 @@ func (s *URLStorage) ServSave(url string) (string, error) {
 }
 
 func (s *URLStorage) ServGet(shortURL string) (string, error) {
-	err := s.Storage.DB.Ping() 
-
-	if err != nil {
+	if s.Storage.DB != nil {
 		var url string
 		row := s.Storage.DB.QueryRow(storage.GetURL, shortURL)
-		
+
 		err := row.Scan(url)
 		if err != nil {
 			return "", nil
