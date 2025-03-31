@@ -91,7 +91,7 @@ func (s *URLStorage) ServGet(shortURL string) (string, error) {
 func (s *URLStorage) PingDB () bool {
 	if s.Storage.DB != nil {
 		err := s.Storage.DB.Ping()
-		return err != nil
+		return err == nil
 	} 
 	return false
 }
