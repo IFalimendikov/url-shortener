@@ -1,14 +1,19 @@
 package storage
 
 var CreateShortURLTable = `
-    CREATE TABLE IF NOT EXISTS urls (
-        id SERIAL PRIMARY KEY,
-        short_url TEXT NOT NULL UNIQUE,
-        url TEXT NOT NULL
-    );`
+	CREATE TABLE IF NOT EXISTS urls (
+		id integer,
+		short_url text,
+		url text
+	);`
 
 var GetURL = `
 	SELECT url 
 	FROM urls 
 	WHERE short_url = $1
+`
+
+var SaveURL = `
+	INSERT into urls (id, short_url, url)
+	VALUES ($1, $2, $3)
 `

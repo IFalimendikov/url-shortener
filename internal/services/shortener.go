@@ -46,6 +46,13 @@ func (s *URLStorage) ServSave(url string) (string, error) {
 		URL:      url,
 	}
 
+	if s.Storage.DB != nil {
+		_, err := s.Storage.DB.Exec(storage.SaveURL, rec.ID, rec.ShortURL, rec.URL)
+		if err != nil {
+			return "", fmt.Errorf("failed to save URL to database: %w", err)
+		}
+	}
+	
 	_, ok := s.Storage.URLs[rec.ShortURL]
 	if !ok {
 		s.MU.Lock()
