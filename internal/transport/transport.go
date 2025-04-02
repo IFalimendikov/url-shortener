@@ -19,7 +19,7 @@ import (
 type URLService interface {
 	ServSave(url string) (string, error)
 	ServGet(shortURL string) (string, error)
-	ShortenBatch(ctx context.Context, req models.ShortenURLBatchRequest, res *models.ShortenURLBatchResponse) error
+	ShortenBatch(ctx context.Context, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
 	PingDB() bool
 }
 
@@ -246,8 +246,8 @@ func (t *Transport)  PingDB (c *gin.Context) {
 }
 
 func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
-	var req models.ShortenURLBatchRequest
-	var res models.ShortenURLBatchResponse
+	var req []models.BatchUnitURLRequest
+	var res []models.BatchUnitURLResponse
 
 	if c.Request.Method != http.MethodPost {
 		c.String(http.StatusBadRequest, "Only POST method allowed!")
@@ -260,13 +260,13 @@ func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	err = json.Unmarshal(body, &req.URLs)
+	err = json.Unmarshal(body, &req)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Error unmarshalling body!")
 		return
 	}
 
-	if len(req.URLs) == 0 {
+	if len(req) == 0 {
 		c.String(http.StatusBadRequest, "Empty or mallformed body sent!")
 		return
 	}

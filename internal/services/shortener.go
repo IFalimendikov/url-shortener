@@ -15,7 +15,7 @@ import (
 type URLService interface {
 	ServSave(url string) (string, error)
 	ServGet(shortURL string) (string, error)
-	ShortenBatch(ctx context.Context, req models.ShortenURLBatchRequest, res *models.ShortenURLBatchResponse) error
+	ShortenBatch(ctx context.Context, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
 	PingDB() bool
 }
 
@@ -105,7 +105,7 @@ func (s *URLStorage) PingDB() bool {
 	return false
 }
 
-func (s *URLStorage) ShortenBatch(ctx context.Context, req models.ShortenURLBatchRequest, res *models.ShortenURLBatchResponse) error {
+func (s *URLStorage) ShortenBatch(ctx context.Context, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error {
 	db := s.Storage.DB
 	if db != nil {
 		tx, err := db.Begin()
@@ -120,7 +120,7 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, req models.ShortenURLBatc
 		}
 		defer stmt.Close()
 
-		for _, x := range req.URLs {
+		for _, x := range req {
 			id := s.Storage.Count
 			short := base62.StdEncoding.EncodeToString([]byte(x.URL))
 
@@ -132,14 +132,14 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, req models.ShortenURLBatc
 		tx.Commit()
 	}
 
-	for _, x := range req.URLs {
+	for _, x := range req {
 		rec := storage.URLRecord{
 			ID:       s.Storage.Count,
 			ShortURL: base62.StdEncoding.EncodeToString([]byte(x.URL)),
 			URL:      x.URL,
 		}
 
-		res.URLs = append(res.URLs, models.BatchUnitURLResponse{
+		*res = append(*res, models.BatchUnitURLResponse{
 			ID:    x.ID,
 			Short: rec.ShortURL,
 		})
