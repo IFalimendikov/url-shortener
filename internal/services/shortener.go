@@ -40,7 +40,7 @@ func NewURLService(ctx context.Context, log *zap.SugaredLogger, storage *storage
 }
 
 func (s *URLStorage) ServSave(url string) (string, error) {
-	short := s.Base.EncodeToString([]byte(url))
+	short := base62.StdEncoding.EncodeToString([]byte(url))
 
 	rec := storage.URLRecord{
 		ID:       s.Storage.Count,
@@ -144,13 +144,14 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, req models.ShortenURLBatc
 			Short: rec.ShortURL,
 		})
 
-		_, ok := s.Storage.URLs[x.URL]
+		_, ok := s.Storage.URLs[rec.ShortURL]
 		if !ok {
 			s.MU.Lock()
 			err := s.Encoder.Encode(rec)
 			if err != nil {
 				return err
 			}
+			s.Storage.URLs[rec.ShortURL] = rec
 			s.Storage.Count++
 			s.MU.Unlock()
 		}
