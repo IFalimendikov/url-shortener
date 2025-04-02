@@ -260,7 +260,7 @@ func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	err = json.Unmarshal(body, &req)
+	err = json.Unmarshal(body, &req.URLs)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Error unmarshalling body!")
 		return
