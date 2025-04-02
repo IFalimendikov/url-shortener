@@ -278,8 +278,8 @@ func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
 	}
 
 	for i := range res {
-        res[i].Short = cfg.BaseURL + res[i].Short
-    }
+		res[i].Short = cfg.BaseURL + "/" + res[i].Short
+	}
 
     c.JSON(http.StatusCreated, res)
 }
