@@ -268,6 +268,7 @@ func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
 
 	if len(req.URLs) == 0 {
 		c.String(http.StatusBadRequest, "Empty or mallformed body sent!")
+		return
 	}
 
 	err = t.serviceURL.ShortenBatch(c.Request.Context(), req, &res)
