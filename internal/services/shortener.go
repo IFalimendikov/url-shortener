@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 	"url-shortener/internal/storage"
+	"url-shortener/internal/models"
 
 	"github.com/deatil/go-encoding/base62"
 	"go.uber.org/zap"
@@ -13,7 +14,8 @@ import (
 
 type URLService interface {
 	ServSave(url string) (string, error)
-	ServGet(shortURL []byte) (string, error)
+	ServGet(shortURL string) (string, error)
+	ShortenBatch(ctx context.Context, req models.ShortenURLBatchRequest, res *models.ShortenURLBatchResponse) error
 	PingDB() bool
 }
 
@@ -52,7 +54,7 @@ func (s *URLStorage) ServSave(url string) (string, error) {
 			return "", fmt.Errorf("failed to save URL to database: %w", err)
 		}
 	}
-	
+
 	_, ok := s.Storage.URLs[rec.ShortURL]
 	if !ok {
 		s.MU.Lock()
@@ -95,10 +97,64 @@ func (s *URLStorage) ServGet(shortURL string) (string, error) {
 	}
 }
 
-func (s *URLStorage) PingDB () bool {
+func (s *URLStorage) PingDB() bool {
 	if s.Storage.DB != nil {
 		err := s.Storage.DB.Ping()
 		return err == nil
-	} 
+	}
 	return false
+}
+
+func (s *URLStorage) ShortenBatch(ctx context.Context, req models.ShortenURLBatchRequest, res *models.ShortenURLBatchResponse) error {
+	db := s.Storage.DB
+	if db != nil {
+		tx, err := db.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+
+		stmt, err := db.PrepareContext(ctx, storage.SaveURL)
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		for _, x := range req.URLs {
+			id := s.Storage.Count
+			short := base62.StdEncoding.EncodeToString([]byte(x.URL))
+
+			_, err = stmt.ExecContext(ctx, id, short, x.URL)
+			if err != nil {
+				return err
+			}
+		}
+		tx.Commit()
+	}
+
+	for _, x := range req.URLs {
+		rec := storage.URLRecord{
+			ID:       s.Storage.Count,
+			ShortURL: base62.StdEncoding.EncodeToString([]byte(x.URL)),
+			URL:      x.URL,
+		}
+
+		res.URLs = append(res.URLs, models.BatchUnitURLResponse{
+			ID:    x.ID,
+			Short: rec.ShortURL,
+		})
+
+		_, ok := s.Storage.URLs[x.URL]
+		if !ok {
+			s.MU.Lock()
+			err := s.Encoder.Encode(rec)
+			if err != nil {
+				return err
+			}
+			s.Storage.Count++
+			s.MU.Unlock()
+		}
+	}
+
+	return nil
 }

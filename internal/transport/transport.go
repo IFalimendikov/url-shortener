@@ -2,6 +2,7 @@ package transport
 
 import (
 	"bytes"
+	"context"
 	"compress/gzip"
 	"encoding/json"
 	"io"
@@ -11,12 +12,14 @@ import (
 	"url-shortener/internal/config"
 
 	"github.com/gin-gonic/gin"
+	"url-shortener/internal/models"
 	"go.uber.org/zap"
 )
 
 type URLService interface {
 	ServSave(url string) (string, error)
 	ServGet(shortURL string) (string, error)
+	ShortenBatch(ctx context.Context, req models.ShortenURLBatchRequest, res *models.ShortenURLBatchResponse) error
 	PingDB() bool
 }
 
@@ -48,9 +51,11 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 	r.POST("/", func(c *gin.Context) {
 		t.PostURL(c, cfg)
 	})
-
 	r.POST("/api/shorten", func(c *gin.Context) {
 		t.ShortenURL(c, cfg)
+	})
+	r.POST("/api/shorten/batch", func(c *gin.Context){
+		t.ShortenBatch(c, cfg)
 	})
 
 	r.GET("/:id", t.GetURL)
@@ -189,8 +194,8 @@ func (t *Transport) GetURL(c *gin.Context) {
 }
 
 func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
-	var req ShortenURLRequest
-	var res ShortneURLResponse
+	var req models.ShortenURLRequest
+	var res models.ShortenURLResponse
 
 	if c.Request.Method != http.MethodPost {
 		c.String(http.StatusBadRequest, "Only POST method allowed!")
@@ -238,4 +243,38 @@ func (t *Transport)  PingDB (c *gin.Context) {
 	}
 
 	c.String(http.StatusInternalServerError, "Can't connect to the Database!")
+}
+
+func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
+	var req models.ShortenURLBatchRequest
+	var res models.ShortenURLBatchResponse
+
+	if c.Request.Method != http.MethodPost {
+		c.String(http.StatusBadRequest, "Only POST method allowed!")
+		return
+	}
+
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Error reading body!")
+		return
+	}
+
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Error unmarshalling body!")
+		return
+	}
+
+	if len(req.URLs) == 0 {
+		c.String(http.StatusBadRequest, "Empty or mallformed body sent!")
+	}
+
+	err = t.serviceURL.ShortenBatch(c.Request.Context(), req, &res)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Error saving URLs!")
+		return
+	}
+
+	c.JSON(http.StatusCreated, res)
 }
