@@ -4,7 +4,7 @@ var CreateShortURLTable = `
 	CREATE TABLE IF NOT EXISTS urls (
 		id integer,
 		short_url text,
-		url text
+		url text PRIMARY KEY
 	);`
 
 var GetURL = `
