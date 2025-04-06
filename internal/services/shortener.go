@@ -17,7 +17,7 @@ import (
 
 var (
 	ErrorDatabase *pgconn.PgError
-	ErrorDuplicate = errors.New("Duplicate URL record")
+	ErrorDuplicate = errors.New("duplicate URL record")
 )
 
 type URLService interface {

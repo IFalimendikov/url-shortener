@@ -166,6 +166,7 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 	if err != nil {
 		if errors.Is(err, services.ErrorDuplicate) {
 			c.String(http.StatusConflict, shortURL)
+			return
 		}
 		c.String(http.StatusBadRequest, "Couldn't encode URL!")
 		return
@@ -229,6 +230,7 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 	if err != nil {
 		if errors.Is(err, services.ErrorDuplicate) {
 			c.JSON(http.StatusConflict, res)
+			return
 		}
 		c.String(http.StatusBadRequest, "Couldn't encode URL!")
 		return
