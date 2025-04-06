@@ -2,19 +2,21 @@ package transport
 
 import (
 	"bytes"
-	"context"
 	"compress/gzip"
+	"context"
 	"encoding/json"
-	"io"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
 	"url-shortener/internal/config"
 
-	"github.com/gin-gonic/gin"
 	"url-shortener/internal/models"
 	"url-shortener/internal/services"
+
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -163,6 +165,7 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 	}
 
 	shortURL, err := t.serviceURL.ServSave(urlStr)
+	shortURL = fmt.Sprintf("%s/%s", cfg.BaseURL, shortURL)
 	if err != nil {
 		if errors.Is(err, services.ErrorDuplicate) {
 			c.String(http.StatusConflict, shortURL)
@@ -171,8 +174,7 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 		c.String(http.StatusBadRequest, "Couldn't encode URL!")
 		return
 	}
-
-	c.String(http.StatusCreated, "%s/%s", cfg.BaseURL, shortURL)
+	c.String(http.StatusCreated, shortURL)
 }
 
 func (t *Transport) GetURL(c *gin.Context) {
