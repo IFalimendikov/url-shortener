@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"io"
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"url-shortener/internal/models"
+	"url-shortener/internal/services"
 	"go.uber.org/zap"
 )
 
@@ -162,6 +164,9 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 
 	shortURL, err := t.serviceURL.ServSave(urlStr)
 	if err != nil {
+		if errors.Is(err, services.ErrorDuplicate) {
+			c.String(http.StatusConflict, shortURL)
+		}
 		c.String(http.StatusBadRequest, "Couldn't encode URL!")
 		return
 	}
@@ -220,12 +225,14 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 	}
 
 	shortURL, err := t.serviceURL.ServSave(req.URL)
+	res.Result = cfg.BaseURL + "/" + string(shortURL)
 	if err != nil {
+		if errors.Is(err, services.ErrorDuplicate) {
+			c.JSON(http.StatusConflict, res)
+		}
 		c.String(http.StatusBadRequest, "Couldn't encode URL!")
 		return
 	}
-
-	res.Result = cfg.BaseURL + "/" + string(shortURL)
 
 	c.JSON(http.StatusCreated, res)
 }

@@ -3,13 +3,21 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
-	"url-shortener/internal/storage"
 	"url-shortener/internal/models"
+	"url-shortener/internal/storage"
 
 	"github.com/deatil/go-encoding/base62"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgerrcode"
 	"go.uber.org/zap"
+)
+
+var (
+	ErrorDatabase *pgconn.PgError
+	ErrorDuplicate = errors.New("Duplicate URL record")
 )
 
 type URLService interface {
@@ -51,6 +59,9 @@ func (s *URLStorage) ServSave(url string) (string, error) {
 	if s.Storage.DB != nil {
 		_, err := s.Storage.DB.Exec(storage.SaveURL, rec.ID, rec.ShortURL, rec.URL)
 		if err != nil {
+			if errors.As(err, &ErrorDatabase) && ErrorDatabase.Code == pgerrcode.UniqueViolation {
+				return short, ErrorDuplicate
+			}
 			return "", fmt.Errorf("failed to save URL to database: %w", err)
 		}
 	}
