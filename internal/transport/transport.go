@@ -8,16 +8,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
-	"url-shortener/internal/config"
-
-	"url-shortener/internal/models"
-	"url-shortener/internal/services"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
+	"url-shortener/internal/config"
+	"url-shortener/internal/models"
+	"url-shortener/internal/services"
 )
 
 type URLService interface {
@@ -29,7 +28,7 @@ type URLService interface {
 
 type Transport struct {
 	serviceURL URLService
-	log        *zap.SugaredLogger
+	log        *slog.Logger
 }
 
 type gzipWriter struct {
@@ -37,7 +36,7 @@ type gzipWriter struct {
 	gzip *gzip.Writer
 }
 
-func NewTransport(cfg config.Config, s URLService, log *zap.SugaredLogger) Transport {
+func NewTransport(cfg config.Config, s URLService, log *slog.Logger) Transport {
 	return Transport{
 		serviceURL: s,
 		log:        log,
@@ -58,7 +57,7 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 	r.POST("/api/shorten", func(c *gin.Context) {
 		t.ShortenURL(c, cfg)
 	})
-	r.POST("/api/shorten/batch", func(c *gin.Context){
+	r.POST("/api/shorten/batch", func(c *gin.Context) {
 		t.ShortenBatch(c, cfg)
 	})
 
@@ -68,7 +67,7 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 	return r
 }
 
-func WithLogging(log *zap.SugaredLogger) gin.HandlerFunc {
+func WithLogging(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		uri := c.Request.RequestURI
@@ -80,13 +79,13 @@ func WithLogging(log *zap.SugaredLogger) gin.HandlerFunc {
 		size := c.Writer.Size()
 
 		latency := time.Since(start)
-		log.Infoln(
-			"uri", uri,
-			"method", method,
-			"duration", latency,
-			"status", status,
-			"size", size,
-		)
+        log.Info("request completed",
+            "uri", uri,
+            "method", method,
+            "duration", latency.String(),
+            "status", status,
+            "size", size,
+        )
 		c.Next()
 	}
 }
@@ -241,7 +240,7 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 	c.JSON(http.StatusCreated, res)
 }
 
-func (t *Transport)  PingDB (c *gin.Context) {
+func (t *Transport) PingDB(c *gin.Context) {
 	if c.Request.Method != http.MethodGet {
 		c.String(http.StatusBadRequest, "Only GET method allowed!")
 		return
@@ -292,5 +291,5 @@ func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
 		res[i].Short = cfg.BaseURL + "/" + res[i].Short
 	}
 
-    c.JSON(http.StatusCreated, res)
+	c.JSON(http.StatusCreated, res)
 }

@@ -13,19 +13,17 @@ import (
 func main() {
 	cfg := flag.ParseFlags()
 	config.Read(&cfg)
-	log := logger.NewLogger()
 
+	log := logger.NewLogger()
 	ctx := context.Background()
-	
+
 	store, err := storage.NewStorage(ctx, &cfg)
 	if err != nil {
-		log.Fatalf("Error creating new storage:%s", err)
+		log.Error("Error creating new storage", "error", err)
 	}
+	defer store.File.Close()
 	defer store.DB.Close()
 
-	if err != nil {
-		log.Fatalf("Error creating tables:%s", err)
-	}
 	s := services.NewURLService(ctx, log, store)
 
 	t := transport.NewTransport(cfg, s, log)

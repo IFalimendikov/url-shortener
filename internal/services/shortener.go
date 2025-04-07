@@ -4,20 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
+	"log/slog"
 	"url-shortener/internal/models"
 	"url-shortener/internal/storage"
 
 	"github.com/deatil/go-encoding/base62"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgerrcode"
-	"go.uber.org/zap"
 )
 
 var (
 	ErrorDatabase *pgconn.PgError
 	ErrorDuplicate = errors.New("duplicate URL record")
+	ErrorNotFound = errors.New("error finding URL")
 )
 
 type URLService interface {
@@ -30,19 +30,17 @@ type URLService interface {
 type URLStorage struct {
 	Context context.Context
 	MU      sync.RWMutex
-	Log     *zap.SugaredLogger
+	Log     *slog.Logger
 	Storage *storage.Storage
 	Encoder *json.Encoder
-	Base    *base62.Encoding
 }
 
-func NewURLService(ctx context.Context, log *zap.SugaredLogger, storage *storage.Storage) *URLStorage {
+func NewURLService(ctx context.Context, log *slog.Logger, storage *storage.Storage) *URLStorage {
 	service := &URLStorage{
 		Context: ctx,
 		Storage: storage,
 		Log:     log,
 		Encoder: json.NewEncoder(&storage.File),
-		Base:    base62.NewEncoding("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"),
 	}
 	return service
 }
@@ -62,7 +60,7 @@ func (s *URLStorage) ServSave(url string) (string, error) {
 			if errors.As(err, &ErrorDatabase) && ErrorDatabase.Code == pgerrcode.UniqueViolation {
 				return short, ErrorDuplicate
 			}
-			return "", fmt.Errorf("failed to save URL to database: %w", err)
+			return "", errors.New("failed to save URL to the database")
 		}
 	}
 
@@ -95,7 +93,7 @@ func (s *URLStorage) ServGet(shortURL string) (string, error) {
 		if url != "" {
 			return url, nil
 		}
-		return "", fmt.Errorf("URL not found")
+		return "", ErrorNotFound
 	}
 
 	s.MU.RLock()
@@ -104,7 +102,7 @@ func (s *URLStorage) ServGet(shortURL string) (string, error) {
 	if ok {
 		return url.URL, nil
 	} else {
-		return "", fmt.Errorf("URL not found")
+		return "", ErrorNotFound
 	}
 }
 

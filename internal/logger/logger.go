@@ -1,13 +1,11 @@
 package logger
 
 import (
-	"go.uber.org/zap"
+	"log/slog"
+	"os"
 )
 
-func NewLogger() (*zap.SugaredLogger) {
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
-
-	sugar := logger.Sugar()
-	return sugar
+func NewLogger() *slog.Logger {
+	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	return log
 }
