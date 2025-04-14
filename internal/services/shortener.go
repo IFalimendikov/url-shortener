@@ -51,13 +51,13 @@ func (s *URLStorage) ServSave(ctx context.Context, url, userID string) (string, 
 
 	rec := storage.URLRecord{
 		ID:       s.Storage.Count,
-		UserId:   userID,
+		UserID:   userID,
 		ShortURL: short,
 		URL:      url,
 	}
 
 	if s.Storage.DB != nil {
-		_, err := s.Storage.DB.ExecContext(ctx, storage.SaveURL, rec.ID, rec.UserId, rec.ShortURL, rec.URL)
+		_, err := s.Storage.DB.ExecContext(ctx, storage.SaveURL, rec.ID, rec.UserID, rec.ShortURL, rec.URL)
 		if err != nil {
 			if errors.As(err, &ErrorDatabase) && ErrorDatabase.Code == pgerrcode.UniqueViolation {
 				return short, ErrorDuplicate
@@ -148,7 +148,7 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, req []models.BatchUnitURL
 			ID:       s.Storage.Count,
 			ShortURL: base62.StdEncoding.EncodeToString([]byte(x.URL)),
 			URL:      x.URL,
-			UserId:   x.UserID,
+			UserID:   x.UserID,
 		}
 
 		*res = append(*res, models.BatchUnitURLResponse{

@@ -21,7 +21,7 @@ type Storage struct {
 
 type URLRecord struct {
 	ID       uint   `json:"uuid"`
-	UserId   string `json:"user_id"`
+	UserID   string `json:"user_id"`
 	ShortURL string `json:"short_url"`
 	URL      string `json:"original_url"`
 }
