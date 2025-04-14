@@ -4,26 +4,27 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"sync"
 	"log/slog"
+	"sync"
 	"url-shortener/internal/models"
 	"url-shortener/internal/storage"
 
 	"github.com/deatil/go-encoding/base62"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var (
-	ErrorDatabase *pgconn.PgError
+	ErrorDatabase  *pgconn.PgError
 	ErrorDuplicate = errors.New("duplicate URL record")
-	ErrorNotFound = errors.New("error finding URL")
+	ErrorNotFound  = errors.New("error finding URL")
 )
 
 type URLService interface {
-	ServSave(url string) (string, error)
+	ServSave(ctx context.Context, url, userID string) (string, error)
 	ServGet(shortURL string) (string, error)
 	ShortenBatch(ctx context.Context, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
+	GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error
 	PingDB() bool
 }
 
@@ -45,17 +46,18 @@ func NewURLService(ctx context.Context, log *slog.Logger, storage *storage.Stora
 	return service
 }
 
-func (s *URLStorage) ServSave(url string) (string, error) {
+func (s *URLStorage) ServSave(ctx context.Context, url, userID string) (string, error) {
 	short := base62.StdEncoding.EncodeToString([]byte(url))
 
 	rec := storage.URLRecord{
 		ID:       s.Storage.Count,
+		UserId:   userID,
 		ShortURL: short,
 		URL:      url,
 	}
 
 	if s.Storage.DB != nil {
-		_, err := s.Storage.DB.Exec(storage.SaveURL, rec.ID, rec.ShortURL, rec.URL)
+		_, err := s.Storage.DB.ExecContext(ctx, storage.SaveURL, rec.ID, rec.UserId, rec.ShortURL, rec.URL)
 		if err != nil {
 			if errors.As(err, &ErrorDatabase) && ErrorDatabase.Code == pgerrcode.UniqueViolation {
 				return short, ErrorDuplicate
@@ -146,6 +148,7 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, req []models.BatchUnitURL
 			ID:       s.Storage.Count,
 			ShortURL: base62.StdEncoding.EncodeToString([]byte(x.URL)),
 			URL:      x.URL,
+			UserId:   x.UserID,
 		}
 
 		*res = append(*res, models.BatchUnitURLResponse{
@@ -166,5 +169,31 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, req []models.BatchUnitURL
 		}
 	}
 
+	return nil
+}
+
+func (s *URLStorage) GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error {
+	db := s.Storage.DB
+	if db != nil {
+		stmt, err := db.PrepareContext(ctx, storage.GetUserURL)
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		rows, err := stmt.QueryContext(ctx, userID)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			rows.Scan(&res)
+		}
+
+		if len(*res) == 0{
+			return ErrorNotFound
+		}
+	}
 	return nil
 }

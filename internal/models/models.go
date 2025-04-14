@@ -9,11 +9,18 @@ type ShortenURLResponse struct {
 }
 
 type BatchUnitURLRequest struct {
-	ID  string `json:"correlation_id"`
-	URL string `json:"original_url"`
+	ID     string `json:"correlation_id"`
+	URL    string `json:"original_url"`
+	UserID string `json:"user_id"`
 }
 
 type BatchUnitURLResponse struct {
-	ID    string `json:"correlation_id"`
-	Short string `json:"short_url"`
+	ID     string `json:"correlation_id"`
+	Short  string `json:"short_url"`
+	UserID string `json:"user_id"`
+}
+
+type UserURLResponse struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }

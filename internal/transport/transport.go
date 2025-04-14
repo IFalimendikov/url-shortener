@@ -8,27 +8,36 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
 	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"url-shortener/internal/config"
 	"url-shortener/internal/models"
 	"url-shortener/internal/services"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type URLService interface {
-	ServSave(url string) (string, error)
+	ServSave(ctx context.Context, url, userID string) (string, error)
 	ServGet(shortURL string) (string, error)
 	ShortenBatch(ctx context.Context, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
+	GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error
 	PingDB() bool
 }
 
 type Transport struct {
 	serviceURL URLService
 	log        *slog.Logger
+}
+
+type Claims struct {
+	jwt.RegisteredClaims
+	UserID int
 }
 
 type gzipWriter struct {
@@ -50,6 +59,7 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 	r.Use(WithLogging(t.log))
 	r.Use(WithDecodingReq())
 	r.Use(WithEncodingRes())
+	r.Use(WithCookies())
 
 	r.POST("/", func(c *gin.Context) {
 		t.PostURL(c, cfg)
@@ -63,6 +73,7 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 
 	r.GET("/:id", t.GetURL)
 	r.GET("/ping", t.PingDB)
+	r.GET("/api/user/urls", t.GetUserURLs)
 
 	return r
 }
@@ -139,6 +150,50 @@ func WithEncodingRes() gin.HandlerFunc {
 	}
 }
 
+func WithCookies() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var UserID int
+		if cookie, err := c.Cookie("jwt"); err == nil {
+			claims := &Claims{}
+			token, err := jwt.ParseWithClaims(cookie, claims, func(t *jwt.Token) (interface{}, error) {
+				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+					c.String(http.StatusBadRequest, "Unexpected signing method")
+					return nil, err
+				}
+				return []byte("123"), nil
+			})
+
+			if err != nil {
+				if claims.UserID == 0 {
+					c.String(http.StatusUnauthorized, "User ID not found!")
+					return
+				}
+			} else if token.Valid {
+				UserID = claims.UserID
+				c.Set("user_id", claims.UserID)
+				c.Next()
+			}
+		}
+
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
+			},
+			UserID: UserID,
+		})
+
+		signedToken, err := token.SignedString([]byte("123"))
+		if err != nil {
+			c.String(http.StatusInternalServerError, "Error signing token")
+			return
+		}
+
+		c.Set("user_id", UserID)
+		c.SetCookie("jwt", signedToken, 60, "/", "", false, true)
+		c.Next()
+	}
+}
+
 func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 	if c.Request.Method != http.MethodPost {
 		c.String(http.StatusBadRequest, "Only POST method allowed!")
@@ -163,7 +218,9 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	shortURL, err := t.serviceURL.ServSave(urlStr)
+	userID := c.GetHeader("user_id")
+
+	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), urlStr, userID)
 	shortURL = fmt.Sprintf("%s/%s", cfg.BaseURL, shortURL)
 	if err != nil {
 		if errors.Is(err, services.ErrorDuplicate) {
@@ -226,7 +283,9 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	shortURL, err := t.serviceURL.ServSave(req.URL)
+	userID := c.GetHeader("user_id")
+
+	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), req.URL, userID)
 	res.Result = cfg.BaseURL + "/" + string(shortURL)
 	if err != nil {
 		if errors.Is(err, services.ErrorDuplicate) {
@@ -290,6 +349,26 @@ func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
 	for i := range res {
 		res[i].Short = cfg.BaseURL + "/" + res[i].Short
 	}
+
+	c.JSON(http.StatusCreated, res)
+}
+
+func (t *Transport) GetUserURLs(c *gin.Context) {
+	var res []models.UserURLResponse
+
+	if c.Request.Method != http.MethodGet {
+		c.String(http.StatusBadRequest, "Only GET method allowed!")
+		return
+	}
+
+	userID := c.GetHeader("user_id")
+
+	err := t.serviceURL.GetUserURLs(c.Request.Context(), userID, &res)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Error finding URLs!")
+		return
+	}
+
 
 	c.JSON(http.StatusCreated, res)
 }
