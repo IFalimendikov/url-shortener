@@ -59,7 +59,7 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 	r.Use(WithLogging(t.log))
 	r.Use(WithDecodingReq())
 	r.Use(WithEncodingRes())
-	// r.Use(WithCookies())
+	r.Use(WithCookies())
 
 	r.POST("/", func(c *gin.Context) {
 		t.PostURL(c, cfg)
@@ -218,7 +218,11 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	userID := c.GetHeader("user_id")
+	userID, ok := c.Get("user_id")
+	if !ok {
+		c.String(http.StatusBadRequest, "Error finding ID!")
+		return
+	}
 
 	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), urlStr, userID)
 	shortURL = fmt.Sprintf("%s/%s", cfg.BaseURL, shortURL)
@@ -283,7 +287,11 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	userID := c.GetHeader("user_id")
+	userID, ok := c.Get("user_id")
+	if !ok {
+		c.String(http.StatusBadRequest, "Error finding ID!")
+		return
+	}
 
 	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), req.URL, userID)
 	res.Result = cfg.BaseURL + "/" + string(shortURL)
@@ -361,7 +369,11 @@ func (t *Transport) GetUserURLs(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetHeader("user_id")
+	userID, ok := c.Get("user_id")
+	if !ok {
+		c.String(http.StatusBadRequest, "Error finding ID!")
+		return
+	}
 
 	err := t.serviceURL.GetUserURLs(c.Request.Context(), userID, &res)
 	if err != nil {
