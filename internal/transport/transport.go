@@ -391,5 +391,5 @@ func (t *Transport) GetUserURLs(c *gin.Context, cfg config.Config) {
 		res[i].ShortURL = cfg.BaseURL + "/" + res[i].ShortURL
 	}
 
-	c.JSON(http.StatusCreated, res)
+	c.JSON(http.StatusOK, res)
 }
