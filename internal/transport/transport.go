@@ -90,13 +90,13 @@ func WithLogging(log *slog.Logger) gin.HandlerFunc {
 		size := c.Writer.Size()
 
 		latency := time.Since(start)
-        log.Info("request completed",
-            "uri", uri,
-            "method", method,
-            "duration", latency.String(),
-            "status", status,
-            "size", size,
-        )
+		log.Info("request completed",
+			"uri", uri,
+			"method", method,
+			"duration", latency.String(),
+			"status", status,
+			"size", size,
+		)
 		c.Next()
 	}
 }
@@ -218,13 +218,13 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	userID, ok := c.Get("user_id")
-	if !ok {
-		c.String(http.StatusBadRequest, "Error finding ID!")
-		return
+	userIDInterface, ok := c.Get("user_id")
+	var userID string
+	if ok {
+		userID = fmt.Sprintf("%d", userIDInterface.(int))
 	}
 
-	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), urlStr, userID)
+	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), urlStr, string(userID))
 	shortURL = fmt.Sprintf("%s/%s", cfg.BaseURL, shortURL)
 	if err != nil {
 		if errors.Is(err, services.ErrorDuplicate) {
@@ -287,10 +287,10 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	userID, ok := c.Get("user_id")
-	if !ok {
-		c.String(http.StatusBadRequest, "Error finding ID!")
-		return
+	userIDInterface, ok := c.Get("user_id")
+	var userID string
+	if ok {
+		userID = fmt.Sprintf("%d", userIDInterface.(int))
 	}
 
 	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), req.URL, userID)
@@ -369,10 +369,10 @@ func (t *Transport) GetUserURLs(c *gin.Context) {
 		return
 	}
 
-	userID, ok := c.Get("user_id")
-	if !ok {
-		c.String(http.StatusBadRequest, "Error finding ID!")
-		return
+	userIDInterface, ok := c.Get("user_id")
+	var userID string
+	if ok {
+		userID = fmt.Sprintf("%d", userIDInterface.(int))
 	}
 
 	err := t.serviceURL.GetUserURLs(c.Request.Context(), userID, &res)
@@ -380,7 +380,6 @@ func (t *Transport) GetUserURLs(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Error finding URLs!")
 		return
 	}
-
 
 	c.JSON(http.StatusCreated, res)
 }
