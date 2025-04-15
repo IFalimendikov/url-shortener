@@ -23,6 +23,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+var (
+	ErrorDuplicate = errors.New("duplicate URL record")
+	ErrorNotFound  = errors.New("error finding URL")
+)
+
 type URLService interface {
 	ServSave(ctx context.Context, url, userID string) (string, error)
 	ServGet(shortURL string) (string, error)
@@ -372,7 +377,7 @@ func (t *Transport) GetUserURLs(c *gin.Context, cfg config.Config) {
 	userID  := c.GetString("user_id")
 
 	err := t.serviceURL.GetUserURLs(c.Request.Context(), userID, &res)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrorNotFound){
 		c.String(http.StatusBadRequest, "Error finding URLs!")
 		return
 	}
