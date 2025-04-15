@@ -376,6 +376,11 @@ func (t *Transport) GetUserURLs(c *gin.Context, cfg config.Config) {
 		return
 	}
 
+	if len(res) == 0 {
+		c.String(http.StatusNoContent, "No URLs found!")
+		return
+	}
+
 	for i := range res {
 		res[i].ShortURL = cfg.BaseURL + "/" + res[i].ShortURL
 	}
