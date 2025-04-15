@@ -165,7 +165,7 @@ func WithCookies() gin.HandlerFunc {
 			claims := &Claims{}
 			token, err := jwt.ParseWithClaims(cookie, claims, func(t *jwt.Token) (interface{}, error) {
 				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-					c.String(http.StatusBadRequest, "Unexpected signing method")
+					c.String(http.StatusBadRequest, "Unexpected signing method!")
 					return nil, err
 				}
 				return []byte("123"), nil
