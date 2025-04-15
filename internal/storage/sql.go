@@ -3,7 +3,7 @@ package storage
 var CreateShortURLTable = `
 	CREATE TABLE IF NOT EXISTS urls (
 		id integer,
-		user_id integer,
+		user_id string,
 		short_url text,
 		url text PRIMARY KEY
 	);`
