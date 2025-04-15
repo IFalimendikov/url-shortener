@@ -26,7 +26,7 @@ import (
 type URLService interface {
 	ServSave(ctx context.Context, url, userID string) (string, error)
 	ServGet(shortURL string) (string, error)
-	ShortenBatch(ctx context.Context, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
+	ShortenBatch(ctx context.Context, userID string, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
 	GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error
 	PingDB() bool
 }
@@ -343,7 +343,9 @@ func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	err = t.serviceURL.ShortenBatch(c.Request.Context(), req, &res)
+	userID  := c.GetString("user_id")
+
+	err = t.serviceURL.ShortenBatch(c.Request.Context(), userID, req, &res)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Error saving URLs!")
 		return

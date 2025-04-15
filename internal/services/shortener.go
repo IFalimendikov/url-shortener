@@ -23,7 +23,7 @@ var (
 type URLService interface {
 	ServSave(ctx context.Context, url, userID string) (string, error)
 	ServGet(shortURL string) (string, error)
-	ShortenBatch(ctx context.Context, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
+	ShortenBatch(ctx context.Context, userID string, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
 	GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error
 	PingDB() bool
 }
@@ -116,7 +116,7 @@ func (s *URLStorage) PingDB() bool {
 	return false
 }
 
-func (s *URLStorage) ShortenBatch(ctx context.Context, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error {
+func (s *URLStorage) ShortenBatch(ctx context.Context, userID string, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error {
 	db := s.Storage.DB
 	if db != nil {
 		tx, err := db.Begin()
@@ -135,7 +135,7 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, req []models.BatchUnitURL
 			id := s.Storage.Count
 			short := base62.StdEncoding.EncodeToString([]byte(x.URL))
 
-			_, err = stmt.ExecContext(ctx, id, short, x.URL)
+			_, err = stmt.ExecContext(ctx, id, userID, short, x.URL)
 			if err != nil {
 				return err
 			}
@@ -148,7 +148,6 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, req []models.BatchUnitURL
 			ID:       s.Storage.Count,
 			ShortURL: base62.StdEncoding.EncodeToString([]byte(x.URL)),
 			URL:      x.URL,
-			UserID:   x.UserID,
 		}
 
 		*res = append(*res, models.BatchUnitURLResponse{
