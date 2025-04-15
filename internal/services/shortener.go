@@ -194,10 +194,6 @@ func (s *URLStorage) GetUserURLs(ctx context.Context, userID string, res *[]mode
 			}
 			*res = append(*res, url)
 		}
-
-		if len(*res) == 0 {
-			return ErrorNotFound
-		}
 	}
 	return nil
 }

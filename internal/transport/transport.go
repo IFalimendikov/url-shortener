@@ -377,7 +377,7 @@ func (t *Transport) GetUserURLs(c *gin.Context, cfg config.Config) {
 	userID  := c.GetString("user_id")
 
 	err := t.serviceURL.GetUserURLs(c.Request.Context(), userID, &res)
-	if err != nil && !errors.Is(err, ErrorNotFound){
+	if err != nil {
 		c.String(http.StatusBadRequest, "Error finding URLs!")
 		return
 	}
