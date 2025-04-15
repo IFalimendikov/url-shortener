@@ -175,6 +175,7 @@ func WithCookies() gin.HandlerFunc {
 				UserID = claims.UserID
 				c.Set("user_id", UserID)
 				c.Next()
+				return
 			}
 		}
 
