@@ -74,7 +74,9 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 
 	r.GET("/:id", t.GetURL)
 	r.GET("/ping", t.PingDB)
-	r.GET("/api/user/urls", t.GetUserURLs)
+	r.GET("/api/user/urls", func(c *gin.Context) {
+		t.GetUserURLs(c, cfg)
+	})
 
 	return r
 }
@@ -358,7 +360,7 @@ func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
 	c.JSON(http.StatusCreated, res)
 }
 
-func (t *Transport) GetUserURLs(c *gin.Context) {
+func (t *Transport) GetUserURLs(c *gin.Context, cfg config.Config) {
 	var res []models.UserURLResponse
 
 	if c.Request.Method != http.MethodGet {
@@ -372,6 +374,10 @@ func (t *Transport) GetUserURLs(c *gin.Context) {
 	if err != nil {
 		c.String(http.StatusBadRequest, "Error finding URLs!")
 		return
+	}
+
+	for i := range res {
+		res[i].ShortURL = cfg.BaseURL + "/" + res[i].ShortURL
 	}
 
 	c.JSON(http.StatusCreated, res)
