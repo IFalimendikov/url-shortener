@@ -59,7 +59,7 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 	r.Use(WithLogging(t.log))
 	r.Use(WithDecodingReq())
 	r.Use(WithEncodingRes())
-	r.Use(WithCookies())
+	// r.Use(WithCookies())
 
 	r.POST("/", func(c *gin.Context) {
 		t.PostURL(c, cfg)
