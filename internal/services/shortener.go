@@ -180,17 +180,22 @@ func (s *URLStorage) GetUserURLs(ctx context.Context, userID string, res *[]mode
 		}
 		defer stmt.Close()
 
-		rows, err := stmt.QueryContext(ctx, userID)
+		rows, err := stmt.QueryContext(ctx, "userID")
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
 
 		for rows.Next() {
-			rows.Scan(&res)
+			var url models.UserURLResponse
+			err := rows.Scan(&url.ShortURL, &url.OriginalURL)
+			if err != nil {
+				return err
+			}
+			*res = append(*res, url)
 		}
 
-		if len(*res) == 0{
+		if len(*res) == 0 {
 			return ErrorNotFound
 		}
 	}
