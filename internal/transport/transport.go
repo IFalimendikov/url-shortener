@@ -19,6 +19,7 @@ import (
 	"url-shortener/internal/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -37,7 +38,7 @@ type Transport struct {
 
 type Claims struct {
 	jwt.RegisteredClaims
-	UserID int
+	UserID string
 }
 
 type gzipWriter struct {
@@ -152,7 +153,7 @@ func WithEncodingRes() gin.HandlerFunc {
 
 func WithCookies() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var UserID int
+		var UserID string
 		if cookie, err := c.Cookie("jwt"); err == nil {
 			claims := &Claims{}
 			token, err := jwt.ParseWithClaims(cookie, claims, func(t *jwt.Token) (interface{}, error) {
@@ -164,16 +165,18 @@ func WithCookies() gin.HandlerFunc {
 			})
 
 			if err != nil {
-				if claims.UserID == 0 {
+				if claims.UserID == "" {
 					c.String(http.StatusUnauthorized, "User ID not found!")
 					return
 				}
 			} else if token.Valid {
 				UserID = claims.UserID
-				c.Set("user_id", claims.UserID)
+				c.Set("user_id", UserID)
 				c.Next()
 			}
 		}
+
+		UserID = uuid.NewString()
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 			RegisteredClaims: jwt.RegisteredClaims{
@@ -218,11 +221,7 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	userIDInterface, ok := c.Get("user_id")
-	var userID string
-	if ok {
-		userID = fmt.Sprintf("%d", userIDInterface.(int))
-	}
+	userID  := c.GetString("user_id")
 
 	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), urlStr, string(userID))
 	shortURL = fmt.Sprintf("%s/%s", cfg.BaseURL, shortURL)
@@ -287,11 +286,7 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	userIDInterface, ok := c.Get("user_id")
-	var userID string
-	if ok {
-		userID = fmt.Sprintf("%d", userIDInterface.(int))
-	}
+	userID  := c.GetString("user_id")
 
 	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), req.URL, userID)
 	res.Result = cfg.BaseURL + "/" + string(shortURL)
@@ -369,11 +364,7 @@ func (t *Transport) GetUserURLs(c *gin.Context) {
 		return
 	}
 
-	userIDInterface, ok := c.Get("user_id")
-	var userID string
-	if ok {
-		userID = fmt.Sprintf("%d", userIDInterface.(int))
-	}
+	userID  := c.GetString("user_id")
 
 	err := t.serviceURL.GetUserURLs(c.Request.Context(), userID, &res)
 	if err != nil {
