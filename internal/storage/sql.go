@@ -5,11 +5,12 @@ var CreateShortURLTable = `
 		id integer,
 		user_id text,
 		short_url text,
-		url text PRIMARY KEY
+		url text PRIMARY KEY,
+		deleted bool DEFAULT false
 	);`
 
 var GetURL = `
-	SELECT url 
+	SELECT url, deleted
 	FROM urls 
 	WHERE short_url = $1
 `
@@ -23,4 +24,10 @@ var GetUserURL = `
 var SaveURL = `
 	INSERT into urls (id, user_id, short_url, url)
 	VALUES ($1, $2, $3, $4)
+`
+
+var DeleteURL = `
+	UPDATE urls
+	SET deleted = true
+	WHERE user_id = $1 AND short_url = $2
 `

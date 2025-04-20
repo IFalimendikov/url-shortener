@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -19,8 +18,8 @@ import (
 	"url-shortener/internal/services"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 var (
@@ -34,6 +33,7 @@ type URLService interface {
 	ShortenBatch(ctx context.Context, userID string, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
 	GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error
 	PingDB() bool
+	DeleteURLs(req []string, userID string) error
 }
 
 type Transport struct {
@@ -81,6 +81,10 @@ func NewRouter(cfg config.Config, t Transport) *gin.Engine {
 	r.GET("/ping", t.PingDB)
 	r.GET("/api/user/urls", func(c *gin.Context) {
 		t.GetUserURLs(c, cfg)
+	})
+
+	r.DELETE("/api/user/urls", func(c *gin.Context) {
+		t.DeleteURLs(c, cfg)
 	})
 
 	return r
@@ -229,7 +233,7 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	userID  := c.GetString("user_id")
+	userID := c.GetString("user_id")
 
 	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), urlStr, string(userID))
 	shortURL = fmt.Sprintf("%s/%s", cfg.BaseURL, shortURL)
@@ -255,6 +259,10 @@ func (t *Transport) GetURL(c *gin.Context) {
 	if id != "" {
 		url, err := t.serviceURL.ServGet(id)
 		if err != nil {
+			if errors.Is(err, services.ErrorURLDeleted) {
+				c.String(http.StatusGone, "URL was deleted!")
+				return
+			}
 			c.String(http.StatusBadRequest, "URL not found!")
 			return
 		}
@@ -294,7 +302,7 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	userID  := c.GetString("user_id")
+	userID := c.GetString("user_id")
 
 	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), req.URL, userID)
 	res.Result = cfg.BaseURL + "/" + string(shortURL)
@@ -351,7 +359,7 @@ func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	userID  := c.GetString("user_id")
+	userID := c.GetString("user_id")
 
 	err = t.serviceURL.ShortenBatch(c.Request.Context(), userID, req, &res)
 	if err != nil {
@@ -374,7 +382,7 @@ func (t *Transport) GetUserURLs(c *gin.Context, cfg config.Config) {
 		return
 	}
 
-	userID  := c.GetString("user_id")
+	userID := c.GetString("user_id")
 
 	err := t.serviceURL.GetUserURLs(c.Request.Context(), userID, &res)
 	if err != nil {
@@ -392,4 +400,36 @@ func (t *Transport) GetUserURLs(c *gin.Context, cfg config.Config) {
 	}
 
 	c.JSON(http.StatusOK, res)
+}
+
+func (t *Transport) DeleteURLs(c *gin.Context, cfg config.Config) {
+	var req []string
+
+	if c.Request.Method != http.MethodDelete {
+		c.String(http.StatusBadRequest, "Only DELETE method allowed!")
+		return
+	}
+
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Error reading body!")
+		return
+	}
+
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Error unmarshalling body!")
+		return
+	}
+
+	if len(req) == 0 {
+		c.String(http.StatusBadRequest, "Empty or mallformed body sent!")
+		return
+	}
+
+	userID := c.GetString("user_id")
+
+	go t.serviceURL.DeleteURLs(req, userID)
+
+	c.Status(http.StatusAccepted)
 }

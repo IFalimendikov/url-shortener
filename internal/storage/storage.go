@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"url-shortener/internal/config"
+	"url-shortener/internal/models"
 )
 
 type Storage struct {
@@ -16,14 +17,7 @@ type Storage struct {
 	DB    *sql.DB
 	File  os.File
 	Count uint
-	URLs  map[string]URLRecord
-}
-
-type URLRecord struct {
-	ID       uint   `json:"uuid"`
-	UserID   string `json:"user_id"`
-	ShortURL string `json:"short_url"`
-	URL      string `json:"original_url"`
+	URLs  map[string]models.URLRecord
 }
 
 func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
@@ -43,8 +37,8 @@ func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
 		return nil, err
 	}
 
-	urls := make(map[string]URLRecord)
-	records := []URLRecord{}
+	urls := make(map[string]models.URLRecord)
+	records := []models.URLRecord{}
 
 	if count > 0 {
 		dec := json.NewDecoder(file)

@@ -24,3 +24,16 @@ type UserURLResponse struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
+
+type URLRecord struct {
+	ID       uint   `json:"uuid"`
+	UserID   string `json:"user_id"`
+	ShortURL string `json:"short_url"`
+	URL      string `json:"original_url"`
+	Deleted  bool   `json:"deleted"`
+}
+
+type DeleteRecord struct {
+	UserID   string `json:"user_id"`
+	ShortURL string `json:"short_url"`
+}
