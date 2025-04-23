@@ -24,7 +24,6 @@ type UserURLResponse struct {
 }
 
 type URLRecord struct {
-	ID       int   `json:"uuid"`
 	UserID   string `json:"user_id"`
 	ShortURL string `json:"short_url"`
 	URL      string `json:"original_url"`
