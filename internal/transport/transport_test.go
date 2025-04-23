@@ -12,8 +12,8 @@ import (
 	"url-shortener/internal/config"
 	"url-shortener/internal/logger"
 	"url-shortener/internal/services"
-	"url-shortener/internal/models"
 	"url-shortener/internal/storage"
+	"url-shortener/internal/types"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,12 +39,12 @@ func TestPostURL(t *testing.T) {
 	})
 
 	cfg := config.Config{
-		BaseURL: "http://localhost:8080",
+		BaseURL:     "http://localhost:8080",
 		StoragePath: "test_storage",
 	}
 
 	log := logger.NewLogger()
-	storage, _ := storage.NewStorage(context.Background(),&cfg)
+	storage, _ := storage.NewStorage(context.Background(), &cfg)
 	defer storage.File.Close()
 
 	s := services.NewURLService(context.Background(), log, storage)
@@ -84,7 +84,7 @@ func TestGetURL(t *testing.T) {
 	})
 
 	cfg := config.Config{
-		BaseURL: "http://localhost:8080",
+		BaseURL:     "http://localhost:8080",
 		StoragePath: "test_storage1",
 	}
 
@@ -139,7 +139,7 @@ func TestShortenURL(t *testing.T) {
 	})
 
 	cfg := config.Config{
-		BaseURL: "http://localhost:8080",
+		BaseURL:     "http://localhost:8080",
 		StoragePath: "test_storage2",
 	}
 
@@ -166,12 +166,12 @@ func TestShortenURL(t *testing.T) {
 	}
 
 	for _, test := range testTable {
-		req := models.ShortenURLRequest{
+		req := types.ShortenURLRequest{
 			URL: test.body,
 		}
 
 		reqPayload, _ := json.Marshal(req)
-		
+
 		resp, body := testRequest(t, ts, "POST", test.url, bytes.NewReader(reqPayload))
 		defer resp.Body.Close()
 		assert.Equal(t, test.status, resp.StatusCode)

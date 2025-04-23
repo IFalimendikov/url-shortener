@@ -7,17 +7,18 @@ import (
 	"os"
 
 	"database/sql"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"url-shortener/internal/config"
-	"url-shortener/internal/models"
+	"url-shortener/internal/types"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Storage struct {
 	cfg   *config.Config
 	DB    *sql.DB
 	File  os.File
-	Count uint
-	URLs  map[string]models.URLRecord
+
+	URLs  map[string]types.URLRecord
 }
 
 func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
@@ -31,14 +32,17 @@ func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
 	for scan.Scan() {
 		count++
 	}
+	if err := scan.Err(); err != nil {
+		return nil, err
+	}
 
 	_, err = file.Seek(0, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	urls := make(map[string]models.URLRecord)
-	records := []models.URLRecord{}
+	urls := make(map[string]types.URLRecord)
+	records := []types.URLRecord{}
 
 	if count > 0 {
 		dec := json.NewDecoder(file)
@@ -57,15 +61,25 @@ func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
 		}
 
 		_, err = db.Exec(CreateShortURLTable)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	storage := Storage{
 		cfg:   cfg,
 		File:  *file,
-		Count: count,
 		URLs:  urls,
 		DB:    db,
 	}
 
 	return &storage, err
+}
+
+func (s *Storage) PingDB() bool {
+	if s.DB != nil {
+		err := s.DB.Ping()
+		return err == nil
+	}
+	return false
 }

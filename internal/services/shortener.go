@@ -7,26 +7,19 @@ import (
 	"log/slog"
 	"sync"
 	"time"
-	"url-shortener/internal/models"
 	"url-shortener/internal/storage"
+	"url-shortener/internal/types"
 
 	"github.com/deatil/go-encoding/base62"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var (
-	ErrorDatabase   *pgconn.PgError
-	ErrorDuplicate  = errors.New("duplicate URL record")
-	ErrorNotFound   = errors.New("error finding URL")
-	ErrorURLDeleted = errors.New("URL was deleted")
-)
-
 type URLService interface {
-	ServSave(ctx context.Context, url, userID string) (string, error)
-	ServGet(shortURL string) (string, error)
-	ShortenBatch(ctx context.Context, userID string, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
-	GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error
+	Save(ctx context.Context, url, userID string) (string, error)
+	Get(shortURL string) (string, error)
+	ShortenBatch(ctx context.Context, userID string, req []types.BatchUnitURLRequest, res *[]types.BatchUnitURLResponse) error
+	GetUserURLs(ctx context.Context, userID string, res *[]types.UserURLResponse) error
 	PingDB() bool
 	DeleteURLs(req []string, userID string) error
 }
@@ -49,11 +42,11 @@ func NewURLService(ctx context.Context, log *slog.Logger, storage *storage.Stora
 	return service
 }
 
-func (s *URLStorage) ServSave(ctx context.Context, url, userID string) (string, error) {
+func (s *URLStorage) Save(ctx context.Context, url, userID string) (string, error) {
 	short := base62.StdEncoding.EncodeToString([]byte(url))
 
-	rec := models.URLRecord{
-		ID:       s.Storage.Count,
+	rec := types.URLRecord{
+		ID:       len(s.Storage.URLs),
 		UserID:   userID,
 		ShortURL: short,
 		URL:      url,
@@ -62,10 +55,11 @@ func (s *URLStorage) ServSave(ctx context.Context, url, userID string) (string, 
 	if s.Storage.DB != nil {
 		_, err := s.Storage.DB.ExecContext(ctx, storage.SaveURL, rec.ID, rec.UserID, rec.ShortURL, rec.URL)
 		if err != nil {
-			if errors.As(err, &ErrorDatabase) && ErrorDatabase.Code == pgerrcode.UniqueViolation {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 				return short, ErrorDuplicate
 			}
-			return "", errors.New("failed to save URL to the database")
+			return "", ErrorURlSave
 		}
 	}
 
@@ -78,16 +72,15 @@ func (s *URLStorage) ServSave(ctx context.Context, url, userID string) (string, 
 		}
 
 		s.Storage.URLs[rec.ShortURL] = rec
-		s.Storage.Count++
 		s.MU.Unlock()
 	}
 
 	return short, nil
 }
 
-func (s *URLStorage) ServGet(shortURL string) (string, error) {
+func (s *URLStorage) Get(shortURL string) (string, error) {
 	if s.Storage.DB != nil {
-		var url models.URLRecord
+		var url types.URLRecord
 		row := s.Storage.DB.QueryRow(storage.GetURL, shortURL)
 
 		err := row.Scan(&url.URL, &url.Deleted)
@@ -116,14 +109,10 @@ func (s *URLStorage) ServGet(shortURL string) (string, error) {
 }
 
 func (s *URLStorage) PingDB() bool {
-	if s.Storage.DB != nil {
-		err := s.Storage.DB.Ping()
-		return err == nil
-	}
-	return false
+	return s.Storage.PingDB()
 }
 
-func (s *URLStorage) ShortenBatch(ctx context.Context, userID string, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error {
+func (s *URLStorage) ShortenBatch(ctx context.Context, userID string, req []types.BatchUnitURLRequest, res *[]types.BatchUnitURLResponse) error {
 	db := s.Storage.DB
 	if db != nil {
 		tx, err := db.Begin()
@@ -139,7 +128,7 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, userID string, req []mode
 		defer stmt.Close()
 
 		for _, x := range req {
-			id := s.Storage.Count
+			id := len(s.Storage.URLs)
 			short := base62.StdEncoding.EncodeToString([]byte(x.URL))
 
 			_, err = stmt.ExecContext(ctx, id, userID, short, x.URL)
@@ -151,13 +140,13 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, userID string, req []mode
 	}
 
 	for _, x := range req {
-		rec := models.URLRecord{
-			ID:       s.Storage.Count,
+		rec := types.URLRecord{
+			ID:       len(s.Storage.URLs),
 			ShortURL: base62.StdEncoding.EncodeToString([]byte(x.URL)),
 			URL:      x.URL,
 		}
 
-		*res = append(*res, models.BatchUnitURLResponse{
+		*res = append(*res, types.BatchUnitURLResponse{
 			ID:    x.ID,
 			Short: rec.ShortURL,
 		})
@@ -170,7 +159,6 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, userID string, req []mode
 				return err
 			}
 			s.Storage.URLs[rec.ShortURL] = rec
-			s.Storage.Count++
 			s.MU.Unlock()
 		}
 	}
@@ -178,7 +166,7 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, userID string, req []mode
 	return nil
 }
 
-func (s *URLStorage) GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error {
+func (s *URLStorage) GetUserURLs(ctx context.Context, userID string, res *[]types.UserURLResponse) error {
 	db := s.Storage.DB
 	if db != nil {
 		stmt, err := db.PrepareContext(ctx, storage.GetUserURL)
@@ -194,7 +182,7 @@ func (s *URLStorage) GetUserURLs(ctx context.Context, userID string, res *[]mode
 		defer rows.Close()
 
 		for rows.Next() {
-			var url models.UserURLResponse
+			var url types.UserURLResponse
 			err := rows.Scan(&url.ShortURL, &url.OriginalURL)
 			if err != nil {
 				return err
@@ -206,11 +194,11 @@ func (s *URLStorage) GetUserURLs(ctx context.Context, userID string, res *[]mode
 }
 
 func (s *URLStorage) DeleteURLs(req []string, userID string) error {
-	ch := make(chan models.DeleteRecord, len(req))
+	ch := make(chan types.DeleteRecord, len(req))
 	defer close(ch)
 
 	for _, x := range req {
-		del := models.DeleteRecord{
+		del := types.DeleteRecord{
 			UserID:   userID,
 			ShortURL: x,
 		}
@@ -220,11 +208,11 @@ func (s *URLStorage) DeleteURLs(req []string, userID string) error {
 	return s.processURLs(ch)
 }
 
-func (s *URLStorage) processURLs(chs ...chan models.DeleteRecord) error {
+func (s *URLStorage) processURLs(chs ...chan types.DeleteRecord) error {
 	var wg sync.WaitGroup
-	var buffer []models.DeleteRecord
-	resultCh := make(chan models.DeleteRecord, 20)
-	timer := time.NewTicker(5*time.Second)
+	var buffer []types.DeleteRecord
+	resultCh := make(chan types.DeleteRecord, 20)
+	timer := time.NewTicker(5 * time.Second)
 
 	go func() {
 		wg.Wait()
@@ -245,8 +233,8 @@ func (s *URLStorage) processURLs(chs ...chan models.DeleteRecord) error {
 
 	for {
 		select {
-		case x, ok := <- resultCh:
-			if !ok{
+		case x, ok := <-resultCh:
+			if !ok {
 				if len(buffer) > 0 {
 					return s.commitDB(buffer)
 				}
@@ -254,12 +242,12 @@ func (s *URLStorage) processURLs(chs ...chan models.DeleteRecord) error {
 			}
 			buffer = append(buffer, x)
 			if len(buffer) >= 10 {
-                if err := s.commitDB(buffer); err != nil {
-                    return err
-                }
-                buffer = buffer[:0]
-            }
-		case <- timer.C:
+				if err := s.commitDB(buffer); err != nil {
+					return err
+				}
+				buffer = buffer[:0]
+			}
+		case <-timer.C:
 			if len(buffer) > 0 {
 				return s.commitDB(buffer)
 			}
@@ -268,7 +256,7 @@ func (s *URLStorage) processURLs(chs ...chan models.DeleteRecord) error {
 	}
 }
 
-func (s *URLStorage) commitDB(records []models.DeleteRecord) error {
+func (s *URLStorage) commitDB(records []types.DeleteRecord) error {
 	db := s.Storage.DB
 	if db != nil {
 		tx, err := db.Begin()

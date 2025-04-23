@@ -14,24 +14,19 @@ import (
 	"time"
 
 	"url-shortener/internal/config"
-	"url-shortener/internal/models"
 	"url-shortener/internal/services"
+	"url-shortener/internal/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-var (
-	ErrorDuplicate = errors.New("duplicate URL record")
-	ErrorNotFound  = errors.New("error finding URL")
-)
-
 type URLService interface {
-	ServSave(ctx context.Context, url, userID string) (string, error)
-	ServGet(shortURL string) (string, error)
-	ShortenBatch(ctx context.Context, userID string, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
-	GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error
+	Save(ctx context.Context, url, userID string) (string, error)
+	Get(shortURL string) (string, error)
+	ShortenBatch(ctx context.Context, userID string, req []types.BatchUnitURLRequest, res *[]types.BatchUnitURLResponse) error
+	GetUserURLs(ctx context.Context, userID string, res *[]types.UserURLResponse) error
 	PingDB() bool
 	DeleteURLs(req []string, userID string) error
 }
@@ -210,11 +205,6 @@ func WithCookies() gin.HandlerFunc {
 }
 
 func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
-	if c.Request.Method != http.MethodPost {
-		c.String(http.StatusBadRequest, "Only POST method allowed!")
-		return
-	}
-
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Cant read body!")
@@ -235,7 +225,7 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 
 	userID := c.GetString("user_id")
 
-	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), urlStr, string(userID))
+	shortURL, err := t.serviceURL.Save(c.Request.Context(), urlStr, string(userID))
 	shortURL = fmt.Sprintf("%s/%s", cfg.BaseURL, shortURL)
 	if err != nil {
 		if errors.Is(err, services.ErrorDuplicate) {
@@ -249,15 +239,10 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 }
 
 func (t *Transport) GetURL(c *gin.Context) {
-	if c.Request.Method != http.MethodGet {
-		c.String(http.StatusBadRequest, "Only GET method allowed!")
-		return
-	}
-
 	id := c.Param("id")
 
 	if id != "" {
-		url, err := t.serviceURL.ServGet(id)
+		url, err := t.serviceURL.Get(id)
 		if err != nil {
 			if errors.Is(err, services.ErrorURLDeleted) {
 				c.String(http.StatusGone, "URL was deleted!")
@@ -277,13 +262,8 @@ func (t *Transport) GetURL(c *gin.Context) {
 }
 
 func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
-	var req models.ShortenURLRequest
-	var res models.ShortenURLResponse
-
-	if c.Request.Method != http.MethodPost {
-		c.String(http.StatusBadRequest, "Only POST method allowed!")
-		return
-	}
+	var req types.ShortenURLRequest
+	var res types.ShortenURLResponse
 
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -304,7 +284,7 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 
 	userID := c.GetString("user_id")
 
-	shortURL, err := t.serviceURL.ServSave(c.Request.Context(), req.URL, userID)
+	shortURL, err := t.serviceURL.Save(c.Request.Context(), req.URL, userID)
 	res.Result = cfg.BaseURL + "/" + string(shortURL)
 	if err != nil {
 		if errors.Is(err, services.ErrorDuplicate) {
@@ -319,11 +299,6 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 }
 
 func (t *Transport) PingDB(c *gin.Context) {
-	if c.Request.Method != http.MethodGet {
-		c.String(http.StatusBadRequest, "Only GET method allowed!")
-		return
-	}
-
 	live := t.serviceURL.PingDB()
 	if live {
 		c.String(http.StatusOK, "Live")
@@ -334,13 +309,8 @@ func (t *Transport) PingDB(c *gin.Context) {
 }
 
 func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
-	var req []models.BatchUnitURLRequest
-	var res []models.BatchUnitURLResponse
-
-	if c.Request.Method != http.MethodPost {
-		c.String(http.StatusBadRequest, "Only POST method allowed!")
-		return
-	}
+	var req []types.BatchUnitURLRequest
+	var res []types.BatchUnitURLResponse
 
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -355,7 +325,7 @@ func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
 	}
 
 	if len(req) == 0 {
-		c.String(http.StatusBadRequest, "Empty or mallformed body sent!")
+		c.String(http.StatusBadRequest, "Empty or malformed body sent!")
 		return
 	}
 
@@ -375,12 +345,7 @@ func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
 }
 
 func (t *Transport) GetUserURLs(c *gin.Context, cfg config.Config) {
-	var res []models.UserURLResponse
-
-	if c.Request.Method != http.MethodGet {
-		c.String(http.StatusBadRequest, "Only GET method allowed!")
-		return
-	}
+	var res []types.UserURLResponse
 
 	userID := c.GetString("user_id")
 
@@ -405,11 +370,6 @@ func (t *Transport) GetUserURLs(c *gin.Context, cfg config.Config) {
 func (t *Transport) DeleteURLs(c *gin.Context, cfg config.Config) {
 	var req []string
 
-	if c.Request.Method != http.MethodDelete {
-		c.String(http.StatusBadRequest, "Only DELETE method allowed!")
-		return
-	}
-
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Error reading body!")
@@ -423,7 +383,7 @@ func (t *Transport) DeleteURLs(c *gin.Context, cfg config.Config) {
 	}
 
 	if len(req) == 0 {
-		c.String(http.StatusBadRequest, "Empty or mallformed body sent!")
+		c.String(http.StatusBadRequest, "Empty or malformed body sent!")
 		return
 	}
 
