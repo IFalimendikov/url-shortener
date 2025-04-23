@@ -58,7 +58,7 @@ func (s *URLStorage) Save(ctx context.Context, url, userID string) (string, erro
 			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 				return short, ErrorDuplicate
 			}
-			return "", ErrorURlSave
+			return "", ErrorURLSave
 		}
 	}
 
