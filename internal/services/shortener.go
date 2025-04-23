@@ -129,7 +129,7 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, userID string, req []type
 		for _, x := range req {
 			short := base62.StdEncoding.EncodeToString([]byte(x.URL))
 
-			_, err = stmt.ExecContext(ctx, id, userID, short, x.URL)
+			_, err = stmt.ExecContext(ctx, userID, short, x.URL)
 			if err != nil {
 				return err
 			}
