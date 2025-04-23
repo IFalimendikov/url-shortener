@@ -17,7 +17,6 @@ type BatchUnitURLRequest struct {
 type BatchUnitURLResponse struct {
 	ID     string `json:"correlation_id"`
 	Short  string `json:"short_url"`
-	UserID string `json:"user_id"`
 }
 
 type UserURLResponse struct {
