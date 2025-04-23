@@ -118,6 +118,9 @@ func WithDecodingReq() gin.HandlerFunc {
 
 		r, err := gzip.NewReader(c.Request.Body)
 		if err != nil {
+			slog.Error("failed to create new gzip reader",
+			"error", err,
+			"path", c.Request.URL.Path,)
 			c.Next()
 			return
 		}
@@ -125,6 +128,9 @@ func WithDecodingReq() gin.HandlerFunc {
 
 		newBody, err := io.ReadAll(r)
 		if err != nil {
+			slog.Error("failed to read gzipped body",
+			"error", err,
+			"path", c.Request.URL.Path,)
 			c.Next()
 			return
 		}
@@ -194,7 +200,10 @@ func WithCookies() gin.HandlerFunc {
 
 		signedToken, err := token.SignedString([]byte("123"))
 		if err != nil {
-			c.String(http.StatusInternalServerError, "Error signing token")
+			slog.Error("failed to sign token",
+			"error", err,
+			"path", c.Request.URL.Path,)
+			c.Next()
 			return
 		}
 
