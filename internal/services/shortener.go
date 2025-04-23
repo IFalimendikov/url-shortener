@@ -52,7 +52,7 @@ func (s *URLStorage) Save(ctx context.Context, url, userID string) (string, erro
 	}
 
 	if s.Storage.DB != nil {
-		_, err := s.Storage.DB.ExecContext(ctx, storage.SaveURL, rec.ID, rec.UserID, rec.ShortURL, rec.URL)
+		_, err := s.Storage.DB.ExecContext(ctx, storage.SaveURL, rec.UserID, rec.ShortURL, rec.URL)
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
