@@ -147,7 +147,7 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, userID string, req []type
 		}
 
 		*res = append(*res, types.BatchUnitURLResponse{
-			ID:    x.ID,
+			UserID:    x.UserID,
 			Short: rec.ShortURL,
 		})
 

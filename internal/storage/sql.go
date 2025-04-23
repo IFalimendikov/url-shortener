@@ -2,7 +2,6 @@ package storage
 
 var CreateShortURLTable = `
 	CREATE TABLE IF NOT EXISTS urls (
-		id integer,
 		user_id text,
 		short_url text,
 		url text PRIMARY KEY,
@@ -22,8 +21,8 @@ var GetUserURL = `
 `
 
 var SaveURL = `
-	INSERT into urls (id, user_id, short_url, url)
-	VALUES ($1, $2, $3, $4)
+	INSERT into urls (user_id, short_url, url)
+	VALUES ($1, $2, $3)
 `
 
 var DeleteURL = `
