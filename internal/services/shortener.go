@@ -46,7 +46,6 @@ func (s *URLStorage) Save(ctx context.Context, url, userID string) (string, erro
 	short := base62.StdEncoding.EncodeToString([]byte(url))
 
 	rec := types.URLRecord{
-		ID:       len(s.Storage.URLs),
 		UserID:   userID,
 		ShortURL: short,
 		URL:      url,
@@ -128,7 +127,6 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, userID string, req []type
 		defer stmt.Close()
 
 		for _, x := range req {
-			id := len(s.Storage.URLs)
 			short := base62.StdEncoding.EncodeToString([]byte(x.URL))
 
 			_, err = stmt.ExecContext(ctx, id, userID, short, x.URL)
@@ -141,7 +139,6 @@ func (s *URLStorage) ShortenBatch(ctx context.Context, userID string, req []type
 
 	for _, x := range req {
 		rec := types.URLRecord{
-			ID:       len(s.Storage.URLs),
 			ShortURL: base62.StdEncoding.EncodeToString([]byte(x.URL)),
 			URL:      x.URL,
 		}
