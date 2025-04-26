@@ -16,6 +16,7 @@ import (
 	"url-shortener/internal/config"
 	"url-shortener/internal/models"
 	"url-shortener/internal/services"
+	"url-shortener/internal/storage"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -237,7 +238,7 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 	shortURL, err := t.serviceURL.SaveURL(c.Request.Context(), urlStr, string(userID))
 	shortURL = fmt.Sprintf("%s/%s", cfg.BaseURL, shortURL)
 	if err != nil {
-		if errors.Is(err, services.ErrorDuplicate) {
+		if errors.Is(err, storage.ErrorDuplicate) {
 			c.String(http.StatusConflict, shortURL)
 			return
 		}
