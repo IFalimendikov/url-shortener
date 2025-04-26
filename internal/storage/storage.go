@@ -166,6 +166,9 @@ func (s *Storage) GetMultiple(ctx context.Context, userID string, res *[]models.
 		}
 		*res = append(*res, url)
 	}
+	if err = rows.Err(); err != nil {
+		return err
+	}
 	return nil
 }
 
