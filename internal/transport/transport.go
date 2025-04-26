@@ -254,7 +254,7 @@ func (t *Transport) GetURL(c *gin.Context) {
 	if id != "" {
 		url, err := t.serviceURL.GetURL(c.Request.Context(), id)
 		if err != nil {
-			if errors.Is(err, services.ErrorURLDeleted) {
+			if errors.Is(err, storage.ErrorURLDeleted) {
 				c.String(http.StatusGone, "URL was deleted!")
 				return
 			}
