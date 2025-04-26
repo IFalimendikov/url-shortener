@@ -1,4 +1,4 @@
-package types
+package models
 
 type ShortenURLRequest struct {
 	URL string `json:"url"`
@@ -15,8 +15,8 @@ type BatchUnitURLRequest struct {
 }
 
 type BatchUnitURLResponse struct {
-	ID     string `json:"correlation_id"`
-	Short  string `json:"short_url"`
+	ID    string `json:"correlation_id"`
+	Short string `json:"short_url"`
 }
 
 type UserURLResponse struct {

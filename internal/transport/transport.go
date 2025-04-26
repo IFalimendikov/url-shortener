@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"url-shortener/internal/config"
+	"url-shortener/internal/models"
 	"url-shortener/internal/services"
-	"url-shortener/internal/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -23,12 +23,12 @@ import (
 )
 
 type URLService interface {
-	Save(ctx context.Context, url, userID string) (string, error)
-	Get(shortURL string) (string, error)
-	ShortenBatch(ctx context.Context, userID string, req []types.BatchUnitURLRequest, res *[]types.BatchUnitURLResponse) error
-	GetUserURLs(ctx context.Context, userID string, res *[]types.UserURLResponse) error
+	SaveURL(ctx context.Context, url, userID string) (string, error)
+	GetURL(ctx context.Context, shortURL string) (string, error)
+	ShortenBatch(ctx context.Context, userID string, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
+	GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error
 	PingDB() bool
-	DeleteURLs(req []string, userID string) error
+	DeleteURLs(ctx context.Context, req []string, userID string) error
 }
 
 type Transport struct {
@@ -119,8 +119,8 @@ func WithDecodingReq() gin.HandlerFunc {
 		r, err := gzip.NewReader(c.Request.Body)
 		if err != nil {
 			slog.Error("failed to create new gzip reader",
-			"error", err,
-			"path", c.Request.URL.Path,)
+				"error", err,
+				"path", c.Request.URL.Path)
 			c.Next()
 			return
 		}
@@ -129,8 +129,8 @@ func WithDecodingReq() gin.HandlerFunc {
 		newBody, err := io.ReadAll(r)
 		if err != nil {
 			slog.Error("failed to read gzipped body",
-			"error", err,
-			"path", c.Request.URL.Path,)
+				"error", err,
+				"path", c.Request.URL.Path)
 			c.Next()
 			return
 		}
@@ -201,8 +201,8 @@ func WithCookies() gin.HandlerFunc {
 		signedToken, err := token.SignedString([]byte("123"))
 		if err != nil {
 			slog.Error("failed to sign token",
-			"error", err,
-			"path", c.Request.URL.Path,)
+				"error", err,
+				"path", c.Request.URL.Path)
 			c.Next()
 			return
 		}
@@ -234,7 +234,7 @@ func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
 
 	userID := c.GetString("user_id")
 
-	shortURL, err := t.serviceURL.Save(c.Request.Context(), urlStr, string(userID))
+	shortURL, err := t.serviceURL.SaveURL(c.Request.Context(), urlStr, string(userID))
 	shortURL = fmt.Sprintf("%s/%s", cfg.BaseURL, shortURL)
 	if err != nil {
 		if errors.Is(err, services.ErrorDuplicate) {
@@ -251,7 +251,7 @@ func (t *Transport) GetURL(c *gin.Context) {
 	id := c.Param("id")
 
 	if id != "" {
-		url, err := t.serviceURL.Get(id)
+		url, err := t.serviceURL.GetURL(c.Request.Context(), id)
 		if err != nil {
 			if errors.Is(err, services.ErrorURLDeleted) {
 				c.String(http.StatusGone, "URL was deleted!")
@@ -271,8 +271,8 @@ func (t *Transport) GetURL(c *gin.Context) {
 }
 
 func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
-	var req types.ShortenURLRequest
-	var res types.ShortenURLResponse
+	var req models.ShortenURLRequest
+	var res models.ShortenURLResponse
 
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -293,7 +293,7 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 
 	userID := c.GetString("user_id")
 
-	shortURL, err := t.serviceURL.Save(c.Request.Context(), req.URL, userID)
+	shortURL, err := t.serviceURL.SaveURL(c.Request.Context(), req.URL, userID)
 	res.Result = cfg.BaseURL + "/" + string(shortURL)
 	if err != nil {
 		if errors.Is(err, services.ErrorDuplicate) {
@@ -318,8 +318,8 @@ func (t *Transport) PingDB(c *gin.Context) {
 }
 
 func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
-	var req []types.BatchUnitURLRequest
-	var res []types.BatchUnitURLResponse
+	var req []models.BatchUnitURLRequest
+	var res []models.BatchUnitURLResponse
 
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -354,7 +354,7 @@ func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
 }
 
 func (t *Transport) GetUserURLs(c *gin.Context, cfg config.Config) {
-	var res []types.UserURLResponse
+	var res []models.UserURLResponse
 
 	userID := c.GetString("user_id")
 
@@ -398,7 +398,7 @@ func (t *Transport) DeleteURLs(c *gin.Context, cfg config.Config) {
 
 	userID := c.GetString("user_id")
 
-	go t.serviceURL.DeleteURLs(req, userID)
+	go t.serviceURL.DeleteURLs(c.Request.Context(), req, userID)
 
 	c.Status(http.StatusAccepted)
 }

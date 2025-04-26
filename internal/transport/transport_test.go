@@ -11,9 +11,9 @@ import (
 	"testing"
 	"url-shortener/internal/config"
 	"url-shortener/internal/logger"
+	"url-shortener/internal/models"
 	"url-shortener/internal/services"
 	"url-shortener/internal/storage"
-	"url-shortener/internal/types"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -166,7 +166,7 @@ func TestShortenURL(t *testing.T) {
 	}
 
 	for _, test := range testTable {
-		req := types.ShortenURLRequest{
+		req := models.ShortenURLRequest{
 			URL: test.body,
 		}
 

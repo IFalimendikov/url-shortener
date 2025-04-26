@@ -6,5 +6,4 @@ import (
 
 var (
 	ErrorDuplicate = errors.New("duplicate URL record")
-	ErrorNotFound  = errors.New("error finding URL")
 )
