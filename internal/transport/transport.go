@@ -15,7 +15,6 @@ import (
 
 	"url-shortener/internal/config"
 	"url-shortener/internal/models"
-	"url-shortener/internal/services"
 	"url-shortener/internal/storage"
 
 	"github.com/gin-gonic/gin"
