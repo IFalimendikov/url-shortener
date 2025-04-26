@@ -297,7 +297,7 @@ func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
 	shortURL, err := t.serviceURL.SaveURL(c.Request.Context(), req.URL, userID)
 	res.Result = cfg.BaseURL + "/" + string(shortURL)
 	if err != nil {
-		if errors.Is(err, services.ErrorDuplicate) {
+		if errors.Is(err, storage.ErrorDuplicate) {
 			c.JSON(http.StatusConflict, res)
 			return
 		}
