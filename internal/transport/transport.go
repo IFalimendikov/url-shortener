@@ -3,37 +3,23 @@ package transport
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"time"
 
 	"url-shortener/internal/config"
-	"url-shortener/internal/models"
-	"url-shortener/internal/storage"
+	"url-shortener/internal/handler"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-type URLService interface {
-	SaveURL(ctx context.Context, url, userID string) (string, error)
-	GetURL(ctx context.Context, shortURL string) (string, error)
-	ShortenBatch(ctx context.Context, userID string, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
-	GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error
-	PingDB() bool
-	DeleteURLs(ctx context.Context, req []string, userID string) error
-}
-
 type Transport struct {
-	serviceURL URLService
-	log        *slog.Logger
+	handler *handler.Handler
+	log     *slog.Logger
+	cfg     config.Config
 }
 
 type Claims struct {
@@ -46,46 +32,47 @@ type gzipWriter struct {
 	gzip *gzip.Writer
 }
 
-func NewTransport(cfg config.Config, s URLService, log *slog.Logger) Transport {
-	return Transport{
-		serviceURL: s,
-		log:        log,
+func NewTransport(cfg config.Config, h *handler.Handler, log *slog.Logger) *Transport {
+	return &Transport{
+		handler: h,
+		log:     log,
+		cfg:     cfg,
 	}
 }
 
-func NewRouter(cfg config.Config, t Transport) *gin.Engine {
+func NewRouter(t *Transport) *gin.Engine {
 
 	r := gin.Default()
 
-	r.Use(WithLogging(t.log))
-	r.Use(WithDecodingReq())
-	r.Use(WithEncodingRes())
-	r.Use(WithCookies())
+	r.Use(t.WithLogging(t.log))
+	r.Use(t.WithDecodingReq())
+	r.Use(t.WithEncodingRes())
+	r.Use(t.WithCookies())
 
 	r.POST("/", func(c *gin.Context) {
-		t.PostURL(c, cfg)
+		t.handler.PostURL(c, t.cfg)
 	})
 	r.POST("/api/shorten", func(c *gin.Context) {
-		t.ShortenURL(c, cfg)
+		t.handler.ShortenURL(c, t.cfg)
 	})
 	r.POST("/api/shorten/batch", func(c *gin.Context) {
-		t.ShortenBatch(c, cfg)
+		t.handler.ShortenBatch(c, t.cfg)
 	})
 
-	r.GET("/:id", t.GetURL)
-	r.GET("/ping", t.PingDB)
+	r.GET("/:id", t.handler.GetURL)
+	r.GET("/ping", t.handler.PingDB)
 	r.GET("/api/user/urls", func(c *gin.Context) {
-		t.GetUserURLs(c, cfg)
+		t.handler.GetUserURLs(c, t.cfg)
 	})
 
 	r.DELETE("/api/user/urls", func(c *gin.Context) {
-		t.DeleteURLs(c, cfg)
+		t.handler.DeleteURLs(c, t.cfg)
 	})
 
 	return r
 }
 
-func WithLogging(log *slog.Logger) gin.HandlerFunc {
+func (t *Transport) WithLogging(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		uri := c.Request.RequestURI
@@ -108,7 +95,7 @@ func WithLogging(log *slog.Logger) gin.HandlerFunc {
 	}
 }
 
-func WithDecodingReq() gin.HandlerFunc {
+func (t *Transport) WithDecodingReq() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header.Get("Content-Encoding")
 		if header != "gzip" {
@@ -139,7 +126,7 @@ func WithDecodingReq() gin.HandlerFunc {
 	}
 }
 
-func WithEncodingRes() gin.HandlerFunc {
+func (t *Transport) WithEncodingRes() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header.Get("Accept-Encoding")
 		if header != "gzip" {
@@ -163,7 +150,7 @@ func WithEncodingRes() gin.HandlerFunc {
 	}
 }
 
-func WithCookies() gin.HandlerFunc {
+func (t *Transport) WithCookies() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var UserID string
 		if cookie, err := c.Cookie("jwt"); err == nil {
@@ -211,194 +198,4 @@ func WithCookies() gin.HandlerFunc {
 		c.SetCookie("jwt", signedToken, 60, "/", "", false, true)
 		c.Next()
 	}
-}
-
-func (t *Transport) PostURL(c *gin.Context, cfg config.Config) {
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		c.String(http.StatusBadRequest, "Cant read body!")
-		return
-	}
-
-	if len(body) == 0 {
-		c.String(http.StatusBadRequest, "Empty body!")
-		return
-	}
-
-	urlStr := string(body)
-	parsedURL, err := url.Parse(urlStr)
-	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
-		c.String(http.StatusBadRequest, "Malformed URI!")
-		return
-	}
-
-	userID := c.GetString("user_id")
-
-	shortURL, err := t.serviceURL.SaveURL(c.Request.Context(), urlStr, string(userID))
-	shortURL = fmt.Sprintf("%s/%s", cfg.BaseURL, shortURL)
-	if err != nil {
-		if errors.Is(err, storage.ErrorDuplicate) {
-			c.String(http.StatusConflict, shortURL)
-			return
-		}
-		c.String(http.StatusBadRequest, "Couldn't encode URL!")
-		return
-	}
-	c.String(http.StatusCreated, shortURL)
-}
-
-func (t *Transport) GetURL(c *gin.Context) {
-	id := c.Param("id")
-
-	if id != "" {
-		url, err := t.serviceURL.GetURL(c.Request.Context(), id)
-		if err != nil {
-			if errors.Is(err, storage.ErrorURLDeleted) {
-				c.String(http.StatusGone, "URL was deleted!")
-				return
-			}
-			c.String(http.StatusBadRequest, "URL not found!")
-			return
-		}
-
-		c.Header("Location", url)
-		c.Redirect(http.StatusTemporaryRedirect, url)
-
-	} else {
-		c.String(http.StatusBadRequest, "URL is empty!")
-		return
-	}
-}
-
-func (t *Transport) ShortenURL(c *gin.Context, cfg config.Config) {
-	var req models.ShortenURLRequest
-	var res models.ShortenURLResponse
-
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		c.String(http.StatusBadRequest, "Cant read body!")
-		return
-	}
-
-	err = json.Unmarshal(body, &req)
-	if err != nil {
-		c.String(http.StatusBadRequest, "Couldn't unmarshal!")
-		return
-	}
-
-	if req.URL == "" {
-		c.String(http.StatusBadRequest, "Empty body!")
-		return
-	}
-
-	userID := c.GetString("user_id")
-
-	shortURL, err := t.serviceURL.SaveURL(c.Request.Context(), req.URL, userID)
-	res.Result = cfg.BaseURL + "/" + string(shortURL)
-	if err != nil {
-		if errors.Is(err, storage.ErrorDuplicate) {
-			c.JSON(http.StatusConflict, res)
-			return
-		}
-		c.String(http.StatusBadRequest, "Couldn't encode URL!")
-		return
-	}
-
-	c.JSON(http.StatusCreated, res)
-}
-
-func (t *Transport) PingDB(c *gin.Context) {
-	live := t.serviceURL.PingDB()
-	if live {
-		c.String(http.StatusOK, "Live")
-		return
-	}
-
-	c.String(http.StatusInternalServerError, "Can't connect to the Database!")
-}
-
-func (t *Transport) ShortenBatch(c *gin.Context, cfg config.Config) {
-	var req []models.BatchUnitURLRequest
-	var res []models.BatchUnitURLResponse
-
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		c.String(http.StatusBadRequest, "Error reading body!")
-		return
-	}
-
-	err = json.Unmarshal(body, &req)
-	if err != nil {
-		c.String(http.StatusBadRequest, "Error unmarshalling body!")
-		return
-	}
-
-	if len(req) == 0 {
-		c.String(http.StatusBadRequest, "Empty or malformed body sent!")
-		return
-	}
-
-	userID := c.GetString("user_id")
-
-	err = t.serviceURL.ShortenBatch(c.Request.Context(), userID, req, &res)
-	if err != nil {
-		c.String(http.StatusBadRequest, "Error saving URLs!")
-		return
-	}
-
-	for i := range res {
-		res[i].Short = cfg.BaseURL + "/" + res[i].Short
-	}
-
-	c.JSON(http.StatusCreated, res)
-}
-
-func (t *Transport) GetUserURLs(c *gin.Context, cfg config.Config) {
-	var res []models.UserURLResponse
-
-	userID := c.GetString("user_id")
-
-	err := t.serviceURL.GetUserURLs(c.Request.Context(), userID, &res)
-	if err != nil {
-		c.String(http.StatusBadRequest, "Error finding URLs!")
-		return
-	}
-
-	if len(res) == 0 {
-		c.String(http.StatusNoContent, "No URLs found!")
-		return
-	}
-
-	for i := range res {
-		res[i].ShortURL = cfg.BaseURL + "/" + res[i].ShortURL
-	}
-
-	c.JSON(http.StatusOK, res)
-}
-
-func (t *Transport) DeleteURLs(c *gin.Context, cfg config.Config) {
-	var req []string
-
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		c.String(http.StatusBadRequest, "Error reading body!")
-		return
-	}
-
-	err = json.Unmarshal(body, &req)
-	if err != nil {
-		c.String(http.StatusBadRequest, "Error unmarshalling body!")
-		return
-	}
-
-	if len(req) == 0 {
-		c.String(http.StatusBadRequest, "Empty or malformed body sent!")
-		return
-	}
-
-	userID := c.GetString("user_id")
-
-	go t.serviceURL.DeleteURLs(c.Request.Context(), req, userID)
-
-	c.Status(http.StatusAccepted)
 }

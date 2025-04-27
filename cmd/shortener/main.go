@@ -8,6 +8,7 @@ import (
 	"url-shortener/internal/services"
 	"url-shortener/internal/storage"
 	"url-shortener/internal/transport"
+	"url-shortener/internal/handler"
 )
 
 func main() {
@@ -25,8 +26,9 @@ func main() {
 	defer store.DB.Close()
 
 	s := services.NewURLService(ctx, log, store)
+	h := handler.NewHandler(s, log)
 
-	t := transport.NewTransport(cfg, s, log)
-	r := transport.NewRouter(cfg, t)
+	t := transport.NewTransport(cfg, h, log)
+	r := transport.NewRouter(t)
 	r.Run(cfg.ServerAddr)
 }
