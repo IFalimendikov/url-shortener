@@ -10,7 +10,7 @@ type Config struct {
 	ServerAddr  string `env:"SERVER_ADDRESS"`
 	BaseURL     string `env:"BASE_URL"`
 	StoragePath string `env:"FILE_STORAGE_PATH"`
-	DBAddress   string `env:"DATABASE_DSN" envDefault:""`
+	DBAddress   string `env:"DATABASE_DSN" envDefault:"postgresql://postgres:Falimendr@db.ripbkamnklxobiwxaozn.supabase.co:5432/postgres"`
 }
 
 func Read(cfg *Config) {
