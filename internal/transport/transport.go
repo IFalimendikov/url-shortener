@@ -32,7 +32,7 @@ type gzipWriter struct {
 	gzip *gzip.Writer
 }
 
-func (gz *gzipWriter) Write(data []byte) (int, error) {
+func (gz gzipWriter) Write(data []byte) (int, error) {
 	return gz.gzip.Write(data)
 }
 
