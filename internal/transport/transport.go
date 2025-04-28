@@ -32,6 +32,10 @@ type gzipWriter struct {
 	gzip *gzip.Writer
 }
 
+func (gz *gzipWriter) Write(data []byte) (int, error) {
+	return gz.gzip.Write(data)
+}
+
 func New(cfg config.Config, h *handler.Handler, log *slog.Logger) *Transport {
 	return &Transport{
 		handler: h,
