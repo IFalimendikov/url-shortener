@@ -32,7 +32,7 @@ type gzipWriter struct {
 	gzip *gzip.Writer
 }
 
-func NewTransport(cfg config.Config, h *handler.Handler, log *slog.Logger) *Transport {
+func New(cfg config.Config, h *handler.Handler, log *slog.Logger) *Transport {
 	return &Transport{
 		handler: h,
 		log:     log,

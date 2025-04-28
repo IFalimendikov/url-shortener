@@ -30,12 +30,12 @@ func setupTest(t *testing.T) (*gin.Context, *httptest.ResponseRecorder, *Handler
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
-	log := logger.NewLogger()
-	store, err := storage.NewStorage(context.Background(), &cfg)
+	log := logger.New()
+	store, err := storage.New(context.Background(), &cfg)
 	require.NoError(t, err)
 
-	service := services.NewURLService(context.Background(), log, store)
-	h := NewHandler(service, log)
+	service := services.New(context.Background(), log, store)
+	h := New(service, log)
 
 	return c, w, h, cfg
 }

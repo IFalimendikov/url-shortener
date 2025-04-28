@@ -6,7 +6,7 @@ import (
 	"url-shortener/internal/config"
 )
 
-func ParseFlags() config.Config {
+func Parse() config.Config {
 	cfg := config.Config{}
 
 	flag.StringVar(&cfg.ServerAddr, "a", cfg.ServerAddr, "HTTP server host address")

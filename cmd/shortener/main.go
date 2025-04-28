@@ -12,23 +12,23 @@ import (
 )
 
 func main() {
-	cfg := flag.ParseFlags()
+	cfg := flag.Parse()
 	config.Read(&cfg)
 
-	log := logger.NewLogger()
+	log := logger.New()
 	ctx := context.Background()
 
-	store, err := storage.NewStorage(ctx, &cfg)
+	store, err := storage.New(ctx, &cfg)
 	if err != nil {
 		log.Error("Error creating new storage", "error", err)
 	}
 	defer store.File.Close()
 	defer store.DB.Close()
 
-	s := services.NewURLService(ctx, log, store)
-	h := handler.NewHandler(s, log)
+	s := services.New(ctx, log, store)
+	h := handler.New(s, log)
 
-	t := transport.NewTransport(cfg, h, log)
+	t := transport.New(cfg, h, log)
 	r := transport.NewRouter(t)
 	r.Run(cfg.ServerAddr)
 }

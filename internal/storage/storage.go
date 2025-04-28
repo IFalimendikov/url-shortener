@@ -24,7 +24,7 @@ type Storage struct {
 	URLs map[string]models.URLRecord
 }
 
-func NewStorage(ctx context.Context, cfg *config.Config) (*Storage, error) {
+func New(ctx context.Context, cfg *config.Config) (*Storage, error) {
 	file, err := os.OpenFile(cfg.StoragePath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return nil, err

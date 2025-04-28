@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-func NewLogger() *slog.Logger {
+func New() *slog.Logger {
 	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	return log
 }
