@@ -22,7 +22,6 @@ type URLRepository interface {
 }
 
 type URLService struct {
-	Context context.Context
 	MU      sync.RWMutex
 	Log     *slog.Logger
 	Storage *storage.Storage
@@ -31,7 +30,6 @@ type URLService struct {
 
 func NewURLService(ctx context.Context, log *slog.Logger, storage *storage.Storage) *URLService {
 	service := &URLService{
-		Context: ctx,
 		Storage: storage,
 		Log:     log,
 		Encoder: json.NewEncoder(&storage.File),
@@ -135,7 +133,8 @@ func (s *URLService) GetUserURLs(ctx context.Context, userID string, res *[]mode
 	return nil
 }
 
-func (s *URLService) DeleteURLs(ctx context.Context, req []string, userID string) error {
+func (s *URLService) DeleteURLs(req []string, userID string) error {
+	ctx := context.Background()
 	ch := make(chan models.DeleteRecord, len(req))
 	defer close(ch)
 
@@ -151,52 +150,68 @@ func (s *URLService) DeleteURLs(ctx context.Context, req []string, userID string
 }
 
 func (s *URLService) processURLs(ctx context.Context, chs ...chan models.DeleteRecord) error {
-	var wg sync.WaitGroup
-	var buffer []models.DeleteRecord
-	resultCh := make(chan models.DeleteRecord, 20)
-	timer := time.NewTicker(5 * time.Second)
+    var wg sync.WaitGroup
+    var buffer []models.DeleteRecord
+    resultCh := make(chan models.DeleteRecord, 20)
+    timer := time.NewTicker(5 * time.Second)
 
-	go func() {
-		wg.Wait()
-		close(resultCh)
-	}()
+    s.Log.Info("Starting URL processing", "channels", len(chs))
 
-	for _, ch := range chs {
-		wg.Add(1)
-		cha := ch
-		go func() {
-			defer wg.Done()
-			for data := range cha {
-				resultCh <- data
+    go func() {
+        wg.Wait()
+        s.Log.Debug("All goroutines completed, closing result channel")
+        close(resultCh)
+    }()
 
-			}
-		}()
-	}
+    for _, ch := range chs {
+        wg.Add(1)
+        cha := ch
+        go func() {
+            defer wg.Done()
+            for data := range cha {
+                s.Log.Debug("Processing URL", "shortURL", data.ShortURL, "userID", data.UserID)
+                resultCh <- data
+            }
+        }()
+    }
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case x, ok := <-resultCh:
-			if !ok {
-				if len(buffer) > 0 {
-					return s.commitDB(ctx, buffer)
-				}
-				return nil
-			}
-			buffer = append(buffer, x)
-			if len(buffer) >= 10 {
-				if err := s.commitDB(ctx, buffer); err != nil {
-					return err
-				}
-				buffer = buffer[:0]
-			}
-		case <-timer.C:
-			if len(buffer) > 0 {
-				return s.commitDB(ctx, buffer)
-			}
-		}
-	}
+    for {
+        select {
+        case <-ctx.Done():
+            s.Log.Warn("Context cancelled in background", 
+                "error", ctx.Err(),
+                "buffered_urls", len(buffer))
+            return ctx.Err()
+
+        case x, ok := <-resultCh:
+            if !ok {
+                if len(buffer) > 0 {
+                    s.Log.Info("Processing final batch", "count", len(buffer))
+                    return s.commitDB(ctx, buffer)
+                }
+                s.Log.Info("URL processing completed")
+                return nil
+            }
+            buffer = append(buffer, x)
+            if len(buffer) >= 10 {
+                s.Log.Info("Buffer full, committing batch", "count", len(buffer))
+                if err := s.commitDB(ctx, buffer); err != nil {
+                    s.Log.Error("Failed to commit batch", 
+                        "error", err,
+                        "batch_size", len(buffer))
+                    return err
+                }
+                buffer = buffer[:0]
+            }
+
+        case <-timer.C:
+            if len(buffer) > 0 {
+                s.Log.Info("Timer triggered, committing remaining URLs", 
+                    "count", len(buffer))
+                return s.commitDB(ctx, buffer)
+            }
+        }
+    }
 }
 
 func (s *URLService) commitDB(ctx context.Context, records []models.DeleteRecord) error {

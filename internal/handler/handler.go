@@ -22,7 +22,7 @@ type URLService interface {
 	ShortenBatch(ctx context.Context, userID string, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error
 	GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error
 	PingDB() bool
-	DeleteURLs(ctx context.Context, req []string, userID string) error
+	DeleteURLs(req []string, userID string) error
 }
 
 type Handler struct {
@@ -222,7 +222,7 @@ func (t *Handler) DeleteURLs(c *gin.Context, cfg config.Config) {
 
 	userID := c.GetString("user_id")
 
-	go t.serviceURL.DeleteURLs(c.Request.Context(), req, userID)
+	go t.serviceURL.DeleteURLs(req, userID)
 
 	c.Status(http.StatusAccepted)
 }
