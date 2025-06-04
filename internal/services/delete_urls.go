@@ -91,18 +91,17 @@ func (s *URLs) processURLs(ctx context.Context, chs ...chan models.DeleteRecord)
 
 func (s *URLs) commitDB(ctx context.Context, records []models.DeleteRecord) error {
 	db := s.Storage.DB
-
-	tx, err := s.Storage.DB.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelSerializable,
-	})
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
 	if db != nil {
-		err := s.Storage.Delete(ctx, tx, records)
+
+		tx, err := s.Storage.DB.BeginTx(ctx, &sql.TxOptions{
+			Isolation: sql.LevelSerializable,
+		})
 		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+
+		if err = s.Storage.Delete(ctx, tx, records); err != nil {
 			return err
 		}
 	}

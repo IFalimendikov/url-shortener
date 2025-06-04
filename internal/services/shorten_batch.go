@@ -2,8 +2,8 @@ package services
 
 import (
 	"context"
-	"url-shortener/internal/models"
 	"database/sql"
+	"url-shortener/internal/models"
 
 	"github.com/deatil/go-encoding/base62"
 )
@@ -18,10 +18,10 @@ func (s *URLs) ShortenBatch(ctx context.Context, userID string, req []models.Bat
 		}
 		defer tx.Rollback()
 
-		err = s.Storage.SaveBatch(ctx, tx, userID, req)
-		if err != nil {
+		if err = s.Storage.SaveBatch(ctx, tx, userID, req); err != nil {
 			return err
 		}
+		return nil
 	}
 
 	for _, x := range req {

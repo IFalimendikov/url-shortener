@@ -4,13 +4,18 @@ import (
 	"context"
 	"url-shortener/internal/models"
 
-	// sq "github.com/Masterminds/squirrel"
+	sq "github.com/Masterminds/squirrel"
 )
 
 func (s *Storage) Get(ctx context.Context, shortURL string) (string, error) {
 	var url models.URLRecord
-	var query = `SELECT url, deleted FROM urls WHERE short_url = $1`
-	row := s.DB.QueryRowContext(ctx, query, shortURL)
+
+	row := sq.Select("url", "deleted").
+		From("urls").
+		Where(sq.Eq{"short_url": shortURL}).
+		PlaceholderFormat(sq.Dollar).
+		RunWith(s.DB).
+		QueryRowContext(ctx)
 
 	err := row.Scan(&url.URL, &url.Deleted)
 	if err != nil {
