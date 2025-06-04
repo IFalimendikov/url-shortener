@@ -1,26 +1,26 @@
 package storage
 
 import (
-    "bufio"
-    "context"
-    "database/sql"
-    "encoding/json"
-    "os"
-    "url-shortener/internal/config"
-    "url-shortener/internal/models"
+	"bufio"
+	"context"
+	"database/sql"
+	"encoding/json"
+	"os"
+	"url-shortener/internal/config"
+	"url-shortener/internal/models"
 )
 
 // Storage holds the file, database and URL mapping information
 type Storage struct {
-    cfg  *config.Config
-    DB   *sql.DB
-    File os.File
-    URLs map[string]models.URLRecord
+	cfg  *config.Config
+	DB   *sql.DB
+	File os.File
+	URLs map[string]models.URLRecord
 }
 
 // Query for creating urls table
 var (
-    UrlsQuery = `CREATE TABLE IF NOT EXISTS urls (user_id text, short_url text, url text PRIMARY KEY, deleted bool DEFAULT false);`
+	UrlsQuery = `CREATE TABLE IF NOT EXISTS urls (user_id text, short_url text, url text PRIMARY KEY, deleted bool DEFAULT false);`
 )
 
 // New creates a new Storage instance with file and database connections

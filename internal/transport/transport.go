@@ -160,7 +160,7 @@ func (t *Transport) WithEncodingRes() gin.HandlerFunc {
 
 			c.Writer = gzipWriter{
 				ResponseWriter: c.Writer,
-				gzip:          gz,
+				gzip:           gz,
 			}
 		}
 		c.Next()
