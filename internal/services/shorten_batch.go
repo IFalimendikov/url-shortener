@@ -3,13 +3,22 @@ package services
 import (
 	"context"
 	"url-shortener/internal/models"
+	"database/sql"
 
 	"github.com/deatil/go-encoding/base62"
 )
 
 func (s *URLs) ShortenBatch(ctx context.Context, userID string, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error {
 	if s.Storage.DB != nil {
-		err := s.Storage.SaveBatch(ctx, userID, req)
+		tx, err := s.Storage.DB.BeginTx(ctx, &sql.TxOptions{
+			Isolation: sql.LevelSerializable,
+		})
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+
+		err = s.Storage.SaveBatch(ctx, tx, userID, req)
 		if err != nil {
 			return err
 		}
