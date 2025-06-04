@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"database/sql"
 	"sync"
 	"time"
 	"url-shortener/internal/models"
