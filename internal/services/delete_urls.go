@@ -28,7 +28,7 @@ func (s *URLs) processURLs(ctx context.Context, chs ...chan models.DeleteRecord)
 	var wg sync.WaitGroup
 	var buffer []models.DeleteRecord
 	resultCh := make(chan models.DeleteRecord, 20)
-	timer := time.NewTicker(5 * time.Second)
+	timer := time.NewTicker(1 * time.Second)
 
 	s.Log.Info("Starting URL processing", "channels", len(chs))
 
@@ -92,7 +92,6 @@ func (s *URLs) processURLs(ctx context.Context, chs ...chan models.DeleteRecord)
 func (s *URLs) commitDB(ctx context.Context, records []models.DeleteRecord) error {
 	db := s.Storage.DB
 	if db != nil {
-
 		tx, err := s.Storage.DB.BeginTx(ctx, &sql.TxOptions{
 			Isolation: sql.LevelSerializable,
 		})
