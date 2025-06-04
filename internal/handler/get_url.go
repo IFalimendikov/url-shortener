@@ -1,11 +1,11 @@
 package handler
 
 import (
-    "errors"
-    "net/http"
-    "url-shortener/internal/storage"
+	"errors"
+	"net/http"
+	"url-shortener/internal/storage"
 
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 // @Summary Get original URL
@@ -20,24 +20,24 @@ import (
 // @Header 307 {string} Location "Original URL for redirect"
 // @Router /{id} [get]
 func (t *Handler) GetURL(c *gin.Context) {
-    id := c.Param("id")
+	id := c.Param("id")
 
-    if id != "" {
-        url, err := t.service.GetURL(c.Request.Context(), id)
-        if err != nil {
-            if errors.Is(err, storage.ErrorURLDeleted) {
-                c.String(http.StatusGone, "URL was deleted!")
-                return
-            }
-            c.String(http.StatusBadRequest, "URL not found!")
-            return
-        }
+	if id != "" {
+		url, err := t.service.GetURL(c.Request.Context(), id)
+		if err != nil {
+			if errors.Is(err, storage.ErrorURLDeleted) {
+				c.String(http.StatusGone, "URL was deleted!")
+				return
+			}
+			c.String(http.StatusBadRequest, "URL not found!")
+			return
+		}
 
-        c.Header("Location", url)
-        c.Redirect(http.StatusTemporaryRedirect, url)
+		c.Header("Location", url)
+		c.Redirect(http.StatusTemporaryRedirect, url)
 
-    } else {
-        c.String(http.StatusBadRequest, "URL is empty!")
-        return
-    }
+	} else {
+		c.String(http.StatusBadRequest, "URL is empty!")
+		return
+	}
 }

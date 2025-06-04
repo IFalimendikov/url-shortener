@@ -1,15 +1,15 @@
 package handler
 
 import (
-    "errors"
-    "fmt"
-    "io"
-    "net/http"
-    "net/url"
-    "url-shortener/internal/config"
-    "url-shortener/internal/storage"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"url-shortener/internal/config"
+	"url-shortener/internal/storage"
 
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 // @Summary Create shortened URL

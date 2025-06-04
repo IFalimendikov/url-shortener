@@ -1,15 +1,15 @@
 package handler
 
 import (
-    "encoding/json"
-    "errors"
-    "io"
-    "net/http"
-    "url-shortener/internal/config"
-    "url-shortener/internal/models"
-    "url-shortener/internal/storage"
+	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
+	"url-shortener/internal/config"
+	"url-shortener/internal/models"
+	"url-shortener/internal/storage"
 
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 // @Summary Shorten URL via JSON
@@ -24,38 +24,38 @@ import (
 // @Success 409 {object} models.ShortenURLResponse "URL already exists"
 // @Router /api/shorten [post]
 func (t *Handler) ShortenURL(c *gin.Context, cfg config.Config) {
-    var req models.ShortenURLRequest
-    var res models.ShortenURLResponse
+	var req models.ShortenURLRequest
+	var res models.ShortenURLResponse
 
-    body, err := io.ReadAll(c.Request.Body)
-    if err != nil {
-        c.String(http.StatusBadRequest, "Cant read body!")
-        return
-    }
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Cant read body!")
+		return
+	}
 
-    err = json.Unmarshal(body, &req)
-    if err != nil {
-        c.String(http.StatusBadRequest, "Couldn't unmarshal!")
-        return
-    }
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Couldn't unmarshal!")
+		return
+	}
 
-    if req.URL == "" {
-        c.String(http.StatusBadRequest, "Empty body!")
-        return
-    }
+	if req.URL == "" {
+		c.String(http.StatusBadRequest, "Empty body!")
+		return
+	}
 
-    userID := c.GetString("user_id")
+	userID := c.GetString("user_id")
 
-    shortURL, err := t.service.SaveURL(c.Request.Context(), req.URL, userID)
-    res.Result = cfg.BaseURL + "/" + string(shortURL)
-    if err != nil {
-        if errors.Is(err, storage.ErrorDuplicate) {
-            c.JSON(http.StatusConflict, res)
-            return
-        }
-        c.String(http.StatusBadRequest, "Couldn't encode URL!")
-        return
-    }
+	shortURL, err := t.service.SaveURL(c.Request.Context(), req.URL, userID)
+	res.Result = cfg.BaseURL + "/" + string(shortURL)
+	if err != nil {
+		if errors.Is(err, storage.ErrorDuplicate) {
+			c.JSON(http.StatusConflict, res)
+			return
+		}
+		c.String(http.StatusBadRequest, "Couldn't encode URL!")
+		return
+	}
 
-    c.JSON(http.StatusCreated, res)
+	c.JSON(http.StatusCreated, res)
 }

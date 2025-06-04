@@ -1,23 +1,23 @@
 package main
 
 import (
-    "context"
-    "net/http"
-    _ "net/http/pprof"
-    "os"
-    "path/filepath"
-    "runtime/pprof"
-    
-    "url-shortener/internal/config"
-    "url-shortener/internal/flag"
-    "url-shortener/internal/handler"
-    "url-shortener/internal/logger"
-    "url-shortener/internal/services"
-    "url-shortener/internal/storage"
-    "url-shortener/internal/transport"
-    _ "url-shortener/docs"
-    
-    _ "github.com/jackc/pgx/v5/stdlib"
+	"context"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"path/filepath"
+	"runtime/pprof"
+
+	_ "url-shortener/docs"
+	"url-shortener/internal/config"
+	"url-shortener/internal/flag"
+	"url-shortener/internal/handler"
+	"url-shortener/internal/logger"
+	"url-shortener/internal/services"
+	"url-shortener/internal/storage"
+	"url-shortener/internal/transport"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 // @title           URL Shortener API
