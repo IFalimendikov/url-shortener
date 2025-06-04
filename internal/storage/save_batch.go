@@ -2,8 +2,9 @@ package storage
 
 import (
 	"context"
-	"github.com/deatil/go-encoding/base62"
 	"url-shortener/internal/models"
+
+	"github.com/deatil/go-encoding/base62"
 
 	sq "github.com/Masterminds/squirrel"
 	_ "github.com/jackc/pgx/v5/stdlib"

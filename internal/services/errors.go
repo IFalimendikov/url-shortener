@@ -5,5 +5,5 @@ import (
 )
 
 var (
-	ErrorNotFound   = errors.New("error finding URL")
+	ErrorNotFound = errors.New("error finding URL")
 )
