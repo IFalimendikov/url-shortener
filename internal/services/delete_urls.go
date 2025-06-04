@@ -92,9 +92,7 @@ func (s *URLs) processURLs(ctx context.Context, chs ...chan models.DeleteRecord)
 func (s *URLs) commitDB(ctx context.Context, records []models.DeleteRecord) error {
 	db := s.Storage.DB
 	if db != nil {
-		tx, err := s.Storage.DB.BeginTx(ctx, &sql.TxOptions{
-			Isolation: sql.LevelReadCommitted,
-		})
+		tx, err := s.Storage.DB.BeginTx(ctx, nil)
 		if err != nil {
 			return err
 		}
