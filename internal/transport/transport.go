@@ -14,28 +14,35 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// Transport handles HTTP transport layer operations including middleware and routing
 type Transport struct {
 	handler *handler.Handler
 	log     *slog.Logger
 	cfg     config.Config
 }
 
+// Claims represents JWT claims structure with user identification
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID string
 }
 
+// gzipWriter wraps gin.ResponseWriter to provide gzip compression
 type gzipWriter struct {
 	gin.ResponseWriter
 	gzip *gzip.Writer
 }
 
+// Write implements io.Writer interface for gzipWriter
 func (gz gzipWriter) Write(data []byte) (int, error) {
 	return gz.gzip.Write(data)
 }
 
+// New creates a new Transport instance with the provided configuration and handlers
 func New(cfg config.Config, h *handler.Handler, log *slog.Logger) *Transport {
 	return &Transport{
 		handler: h,
@@ -44,6 +51,7 @@ func New(cfg config.Config, h *handler.Handler, log *slog.Logger) *Transport {
 	}
 }
 
+// NewRouter sets up and configures a new gin router with all necessary middlewares and routes
 func NewRouter(t *Transport) *gin.Engine {
 
 	r := gin.Default()
@@ -72,6 +80,8 @@ func NewRouter(t *Transport) *gin.Engine {
 	r.DELETE("/api/user/urls", func(c *gin.Context) {
 		t.handler.DeleteURLs(c, t.cfg)
 	})
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return r
 }

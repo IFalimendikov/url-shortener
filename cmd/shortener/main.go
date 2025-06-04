@@ -1,23 +1,31 @@
 package main
 
 import (
-	"context"
-	"net/http"
-	_ "net/http/pprof"
-	"os"
-	"path/filepath"
-	"runtime/pprof"
-	"url-shortener/internal/config"
-	"url-shortener/internal/flag"
-	"url-shortener/internal/handler"
-	"url-shortener/internal/logger"
-	"url-shortener/internal/services"
-	"url-shortener/internal/storage"
-	"url-shortener/internal/transport"
-
-	_ "github.com/jackc/pgx/v5/stdlib"
+    "context"
+    "net/http"
+    _ "net/http/pprof"
+    "os"
+    "path/filepath"
+    "runtime/pprof"
+    
+    "url-shortener/internal/config"
+    "url-shortener/internal/flag"
+    "url-shortener/internal/handler"
+    "url-shortener/internal/logger"
+    "url-shortener/internal/services"
+    "url-shortener/internal/storage"
+    "url-shortener/internal/transport"
+    _ "url-shortener/docs"
+    
+    _ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// @title           URL Shortener API
+// @version         1.0
+// @description     A URL shortening service API
+
+// @host      localhost:8080
+// @BasePath  /api/v1
 func main() {
 	cfg := flag.Parse()
 	config.Read(&cfg)

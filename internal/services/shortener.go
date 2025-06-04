@@ -9,6 +9,7 @@ import (
 	"url-shortener/internal/storage"
 )
 
+// Service defines the interface for URL shortening operations
 type Service interface {
 	SaveURL(ctx context.Context, url, userID string) (string, error)
 	GetURL(ctx context.Context, shortURL string) (string, error)
@@ -18,18 +19,20 @@ type Service interface {
 	DeleteURLs(ctx context.Context, req []string, userID string) error
 }
 
+// URLs implements the Service interface and manages URL shortening operations
 type URLs struct {
-	MU      sync.RWMutex
-	Log     *slog.Logger
-	Storage *storage.Storage
-	Encoder *json.Encoder
+    MU      sync.RWMutex      // Mutex for thread-safe operations
+    Log     *slog.Logger      // Logger for service operations
+    Storage *storage.Storage  // Storage interface for persistence
+    Encoder *json.Encoder     // JSON encoder for data serialization
 }
 
+// New creates and initializes a new URLs service instance
 func New(ctx context.Context, log *slog.Logger, storage *storage.Storage) *URLs {
-	service := &URLs{
-		Storage: storage,
-		Log:     log,
-		Encoder: json.NewEncoder(&storage.File),
-	}
-	return service
+    service := &URLs{
+        Storage: storage,
+        Log:     log,
+        Encoder: json.NewEncoder(&storage.File),
+    }
+    return service
 }
