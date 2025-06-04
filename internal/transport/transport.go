@@ -86,6 +86,7 @@ func NewRouter(t *Transport) *gin.Engine {
 	return r
 }
 
+// WithLogging adds request logging middleware that records URI, method, duration, status, and size.
 func (t *Transport) WithLogging(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
@@ -109,6 +110,7 @@ func (t *Transport) WithLogging(log *slog.Logger) gin.HandlerFunc {
 	}
 }
 
+// WithDecodingReq adds middleware to handle gzip-encoded request bodies.
 func (t *Transport) WithDecodingReq() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header.Get("Content-Encoding")
@@ -140,6 +142,7 @@ func (t *Transport) WithDecodingReq() gin.HandlerFunc {
 	}
 }
 
+// WithEncodingRes adds middleware to handle gzip encoding of response bodies for JSON and HTML content.
 func (t *Transport) WithEncodingRes() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header.Get("Accept-Encoding")
@@ -157,13 +160,14 @@ func (t *Transport) WithEncodingRes() gin.HandlerFunc {
 
 			c.Writer = gzipWriter{
 				ResponseWriter: c.Writer,
-				gzip:           gz,
+				gzip:          gz,
 			}
 		}
 		c.Next()
 	}
 }
 
+// WithCookies adds middleware to handle JWT authentication via cookies and user identification.
 func (t *Transport) WithCookies() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var UserID string

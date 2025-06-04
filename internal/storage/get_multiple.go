@@ -7,6 +7,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
+// GetMultiple retrieves all shortened URLs for a user
 func (s *Storage) GetMultiple(ctx context.Context, userID string, res *[]models.UserURLResponse) error {
 	rows, err := sq.Select("short_url", "url").
 		From("urls").

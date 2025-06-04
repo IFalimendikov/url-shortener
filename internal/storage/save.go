@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+// Save stores a URL with its shortened version and user ID
 func (s *Storage) Save(ctx context.Context, rec models.URLRecord) error {
 	_, err := sq.Insert("urls").
 		Columns("user_id", "short_url", "url").

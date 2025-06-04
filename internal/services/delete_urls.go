@@ -7,6 +7,7 @@ import (
 	"url-shortener/internal/models"
 )
 
+// DeleteURLs processes a batch of URLs for deletion for a specific user
 func (s *URLs) DeleteURLs(req []string, userID string) error {
 	ctx := context.Background()
 	ch := make(chan models.DeleteRecord, len(req))
@@ -23,6 +24,7 @@ func (s *URLs) DeleteURLs(req []string, userID string) error {
 	return s.processURLs(ctx, ch)
 }
 
+// processURLs handles concurrent processing of URLs from multiple channels with buffered batch commits
 func (s *URLs) processURLs(ctx context.Context, chs ...chan models.DeleteRecord) error {
 	var wg sync.WaitGroup
 	var buffer []models.DeleteRecord
@@ -88,6 +90,7 @@ func (s *URLs) processURLs(ctx context.Context, chs ...chan models.DeleteRecord)
 	}
 }
 
+// commitDB performs a transactional deletion of URL records in the database
 func (s *URLs) commitDB(ctx context.Context, records []models.DeleteRecord) error {
 	db := s.Storage.DB
 	if db != nil {

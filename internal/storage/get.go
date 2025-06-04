@@ -7,6 +7,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
+// Get retrieves the original URL using the shortened URL
 func (s *Storage) Get(ctx context.Context, shortURL string) (string, error) {
 	var url models.URLRecord
 

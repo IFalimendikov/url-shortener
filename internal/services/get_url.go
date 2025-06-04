@@ -4,6 +4,7 @@ import (
 	"context"
 )
 
+// GetURL retrieves the original URL from storage using the shortened URL as a key
 func (s *URLs) GetURL(ctx context.Context, shortURL string) (string, error) {
 	if s.Storage.DB != nil {
 		url, err := s.Storage.Get(ctx, shortURL)

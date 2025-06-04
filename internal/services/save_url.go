@@ -7,6 +7,7 @@ import (
 	"github.com/deatil/go-encoding/base62"
 )
 
+// SaveURL creates a shortened URL from the original URL and stores it with the associated userID
 func (s *URLs) SaveURL(ctx context.Context, url, userID string) (string, error) {
 	short := base62.StdEncoding.EncodeToString([]byte(url))
 

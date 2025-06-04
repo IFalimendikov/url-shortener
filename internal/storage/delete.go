@@ -7,6 +7,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
+// Delete marks multiple URLs as deleted in the database for a given user
 func (s *Storage) Delete(ctx context.Context, runner sq.BaseRunner, records []models.DeleteRecord) error {
 	for _, x := range records {
 		_, err := sq.Update("urls").

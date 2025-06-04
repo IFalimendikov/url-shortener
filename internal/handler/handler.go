@@ -22,6 +22,7 @@ type Handler struct {
 	log     *slog.Logger
 }
 
+// New creates a new Handler instance
 func New(s Service, log *slog.Logger) *Handler {
 	return &Handler{
 		service: s,
