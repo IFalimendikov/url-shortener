@@ -29,7 +29,7 @@ func (s *URLs) processURLs(ctx context.Context, chs ...chan models.DeleteRecord)
 	var wg sync.WaitGroup
 	var buffer []models.DeleteRecord
 	resultCh := make(chan models.DeleteRecord, 20)
-	timer := time.NewTicker(1 * time.Second)
+	timer := time.NewTicker(2 * time.Second)
 
 	s.Log.Info("Starting URL processing", "channels", len(chs))
 
