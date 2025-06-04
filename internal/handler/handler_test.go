@@ -149,12 +149,12 @@ func TestShortenBatch(t *testing.T) {
 }
 
 func BenchmarkPostURL(b *testing.B) {
-	c, _, h, cfg := setupTest(&testing.T{})
+	_, _, h, cfg := setupTest(&testing.T{})
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		w := httptest.NewRecorder()
-		c, _ = gin.CreateTestContext(w)
+		c, _ := gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest("POST", "/", bytes.NewBufferString("https://example.com"))
 		c.Set("user_id", "test-user")
 		h.PostURL(c, cfg)
@@ -173,7 +173,7 @@ func BenchmarkGetURL(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		w := httptest.NewRecorder()
-		c, _ = gin.CreateTestContext(w)
+		c, _ := gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest("GET", "/:id", nil)
 		c.Params = []gin.Param{{Key: "id", Value: shortID}}
 		h.GetURL(c)
@@ -181,14 +181,14 @@ func BenchmarkGetURL(b *testing.B) {
 }
 
 func BenchmarkShortenURL(b *testing.B) {
-	c, _, h, cfg := setupTest(&testing.T{})
+	_, _, h, cfg := setupTest(&testing.T{})
 	req := models.ShortenURLRequest{URL: "https://example.com"}
 	body, _ := json.Marshal(req)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		w := httptest.NewRecorder()
-		c, _ = gin.CreateTestContext(w)
+		c, _ := gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest("POST", "/api/shorten", bytes.NewBuffer(body))
 		c.Set("user_id", "test-user")
 		h.ShortenURL(c, cfg)
@@ -196,7 +196,7 @@ func BenchmarkShortenURL(b *testing.B) {
 }
 
 func BenchmarkShortenBatch(b *testing.B) {
-	c, _, h, cfg := setupTest(&testing.T{})
+	_, _, h, cfg := setupTest(&testing.T{})
 	req := []models.BatchUnitURLRequest{
 		{ID: "1", URL: "https://example1.com"},
 		{ID: "2", URL: "https://example2.com"},
@@ -206,7 +206,7 @@ func BenchmarkShortenBatch(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		w := httptest.NewRecorder()
-		c, _ = gin.CreateTestContext(w)
+		c, _ := gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest("POST", "/api/shorten/batch", bytes.NewBuffer(body))
 		c.Set("user_id", "test-user")
 		h.ShortenBatch(c, cfg)
