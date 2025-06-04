@@ -67,7 +67,7 @@ func (s *URLs) processURLs(ctx context.Context, chs ...chan models.DeleteRecord)
 				return nil
 			}
 			buffer = append(buffer, x)
-			if len(buffer) >= 10 {
+			if len(buffer) >= 5 {
 				s.Log.Info("Buffer full, committing batch", "count", len(buffer))
 				if err := s.commitDB(ctx, buffer); err != nil {
 					s.Log.Error("Failed to commit batch",
