@@ -93,7 +93,7 @@ func (s *URLs) commitDB(ctx context.Context, records []models.DeleteRecord) erro
 	db := s.Storage.DB
 	if db != nil {
 		tx, err := s.Storage.DB.BeginTx(ctx, &sql.TxOptions{
-			Isolation: sql.LevelSerializable,
+			Isolation: sql.LevelReadCommitted,
 		})
 		if err != nil {
 			return err
