@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"net/http"
 	"path/filepath"
 	"runtime/pprof"
+
+	_ "url-shortener/docs"
 	"url-shortener/internal/config"
 	"url-shortener/internal/flag"
 	"url-shortener/internal/handler"
@@ -15,8 +16,16 @@ import (
 	"url-shortener/internal/services"
 	"url-shortener/internal/storage"
 	"url-shortener/internal/transport"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// @title           URL Shortener API
+// @version         1.0
+// @description     A URL shortening service API
+
+// @host      localhost:8080
+// @BasePath  /api/v1
 func main() {
 	cfg := flag.Parse()
 	config.Read(&cfg)
@@ -25,24 +34,24 @@ func main() {
 	ctx := context.Background()
 
 	go func() {
-        if err := http.ListenAndServe("localhost:6060", nil); err != nil {
-            log.Error("pprof server failed", "error", err)
-        }
-    }()
+		if err := http.ListenAndServe("localhost:6060", nil); err != nil {
+			log.Error("pprof server failed", "error", err)
+		}
+	}()
 
-    if err := os.MkdirAll("profiles", 0755); err != nil {
-        log.Error("Failed to create profiles directory", "error", err)
-    }
+	if err := os.MkdirAll("profiles", 0755); err != nil {
+		log.Error("Failed to create profiles directory", "error", err)
+	}
 
-    f, err := os.Create(filepath.Join("profiles", "base.pprof"))
-    if err != nil {
-        log.Error("Failed to create base profile", "error", err)
-    }
-    defer f.Close()
+	f, err := os.Create(filepath.Join("profiles", "base.pprof"))
+	if err != nil {
+		log.Error("Failed to create base profile", "error", err)
+	}
+	defer f.Close()
 
-    if err := pprof.WriteHeapProfile(f); err != nil {
-        log.Error("Failed to write heap profile", "error", err)
-    }
+	if err := pprof.WriteHeapProfile(f); err != nil {
+		log.Error("Failed to write heap profile", "error", err)
+	}
 
 	store, err := storage.New(ctx, &cfg)
 	if err != nil {

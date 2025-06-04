@@ -2,10 +2,18 @@ package flag
 
 import (
 	"flag"
-
 	"url-shortener/internal/config"
 )
 
+// Parse reads and parses command line flags into a Config struct.
+// It handles the following flags:
+//
+//	-a: HTTP server host address
+//	-b: Base HTTP address returned before short URL
+//	-f: Storage file path for URLs
+//	-d: Database connection string
+//
+// Returns a populated Config struct with the parsed values.
 func Parse() config.Config {
 	cfg := config.Config{}
 

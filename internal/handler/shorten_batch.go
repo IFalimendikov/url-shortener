@@ -10,6 +10,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary Shorten multiple URLs in batch
+// @Description Creates shortened versions for multiple URLs in a single request
+// @Tags urls
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param Authorization header string true "Bearer JWT token"
+// @Param request body []models.BatchUnitURLRequest true "Array of URLs to shorten"
+// @Success 201 {array} models.BatchUnitURLResponse "Array of shortened URLs"
+// @Failure 400 {string} string "Error reading body!/Error unmarshalling body!/Empty or malformed body sent!/Error saving URLs!"
+// @Router /api/shorten/batch [post]
 func (t *Handler) ShortenBatch(c *gin.Context, cfg config.Config) {
 	var req []models.BatchUnitURLRequest
 	var res []models.BatchUnitURLResponse

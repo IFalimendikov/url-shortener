@@ -14,28 +14,35 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// Transport handles HTTP transport layer operations including middleware and routing
 type Transport struct {
 	handler *handler.Handler
 	log     *slog.Logger
 	cfg     config.Config
 }
 
+// Claims represents JWT claims structure with user identification
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID string
 }
 
+// gzipWriter wraps gin.ResponseWriter to provide gzip compression
 type gzipWriter struct {
 	gin.ResponseWriter
 	gzip *gzip.Writer
 }
 
+// Write implements io.Writer interface for gzipWriter
 func (gz gzipWriter) Write(data []byte) (int, error) {
 	return gz.gzip.Write(data)
 }
 
+// New creates a new Transport instance with the provided configuration and handlers
 func New(cfg config.Config, h *handler.Handler, log *slog.Logger) *Transport {
 	return &Transport{
 		handler: h,
@@ -44,6 +51,7 @@ func New(cfg config.Config, h *handler.Handler, log *slog.Logger) *Transport {
 	}
 }
 
+// NewRouter sets up and configures a new gin router with all necessary middlewares and routes
 func NewRouter(t *Transport) *gin.Engine {
 
 	r := gin.Default()
@@ -73,9 +81,12 @@ func NewRouter(t *Transport) *gin.Engine {
 		t.handler.DeleteURLs(c, t.cfg)
 	})
 
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	return r
 }
 
+// WithLogging adds request logging middleware that records URI, method, duration, status, and size.
 func (t *Transport) WithLogging(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
@@ -99,6 +110,7 @@ func (t *Transport) WithLogging(log *slog.Logger) gin.HandlerFunc {
 	}
 }
 
+// WithDecodingReq adds middleware to handle gzip-encoded request bodies.
 func (t *Transport) WithDecodingReq() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header.Get("Content-Encoding")
@@ -130,6 +142,7 @@ func (t *Transport) WithDecodingReq() gin.HandlerFunc {
 	}
 }
 
+// WithEncodingRes adds middleware to handle gzip encoding of response bodies for JSON and HTML content.
 func (t *Transport) WithEncodingRes() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header.Get("Accept-Encoding")
@@ -154,6 +167,7 @@ func (t *Transport) WithEncodingRes() gin.HandlerFunc {
 	}
 }
 
+// WithCookies adds middleware to handle JWT authentication via cookies and user identification.
 func (t *Transport) WithCookies() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var UserID string

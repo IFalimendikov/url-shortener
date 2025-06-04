@@ -9,6 +9,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary Delete URLs
+// @Description Delete multiple URLs for a specific user
+// @Tags urls
+// @Accept json
+// @Produce plain
+// @Param Authorization header string true "Bearer JWT token"
+// @Param request body []string true "Array of URLs to delete"
+// @Success 202 {string} string "Accepted"
+// @Failure 400 {string} string "Error reading body!/Error unmarshalling body!/Empty or malformed body sent!"
+// @Router /api/urls [delete]
 func (t *Handler) DeleteURLs(c *gin.Context, cfg config.Config) {
 	var req []string
 

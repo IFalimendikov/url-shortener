@@ -12,6 +12,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary Shorten URL via JSON
+// @Description Creates a shortened version of a URL provided in JSON format
+// @Tags urls
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param Authorization header string true "Bearer JWT token"
+// @Param request body models.ShortenURLRequest true "URL to shorten"
+// @Success 201 {object} models.ShortenURLResponse "Shortened URL"
+// @Success 409 {object} models.ShortenURLResponse "URL already exists"
+// @Router /api/shorten [post]
 func (t *Handler) ShortenURL(c *gin.Context, cfg config.Config) {
 	var req models.ShortenURLRequest
 	var res models.ShortenURLResponse

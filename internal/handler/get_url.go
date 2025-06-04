@@ -8,6 +8,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary Get original URL
+// @Description Retrieves and redirects to the original URL from a shortened URL ID
+// @Tags urls
+// @Accept plain
+// @Produce plain
+// @Param id path string true "Shortened URL ID"
+// @Success 307 {string} string "Temporary Redirect"
+// @Failure 400 {string} string "URL not found!"
+// @Failure 410 {string} string "URL was deleted!"
+// @Header 307 {string} Location "Original URL for redirect"
+// @Router /{id} [get]
 func (t *Handler) GetURL(c *gin.Context) {
 	id := c.Param("id")
 

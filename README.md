@@ -1,32 +1,73 @@
-# go-musthave-shortener-tpl
+# URL Shortener Service API
 
-Шаблон репозитория для трека «Сервис сокращения URL».
+HTTP API for URL shortening service with the following endpoints:
 
-## Начало работы
+## URL Operations
 
-1. Склонируйте репозиторий в любую подходящую директорию на вашем компьютере.
-2. В корне репозитория выполните команду `go mod init <name>` (где `<name>` — адрес вашего репозитория на GitHub без префикса `https://`) для создания модуля.
+### POST /api/shorten
+Request body:
+{
+    "url": "string"    // Original URL to be shortened
+}
+Arguments:
+- url: required field, must be a valid URL
 
-## Обновление шаблона
+Response: 
+{
+    "result": "string"  // Shortened URL
+}
 
-Чтобы иметь возможность получать обновления автотестов и других частей шаблона, выполните команду:
+### POST /api/shorten/batch
+Request body:
+[
+    {
+        "correlation_id": "string",  // Client-defined ID
+        "original_url": "string"     // URL to be shortened
+    }
+]
 
-```
-git remote add -m main template https://github.com/Yandex-Practicum/go-musthave-shortener-tpl.git
-```
+Response:
+[
+    {
+        "correlation_id": "string",  // Matching client ID
+        "short_url": "string"       // Shortened URL
+    }
+]
 
-Для обновления кода автотестов выполните команду:
+### GET /{id}
+Arguments:
+- id: shortened URL identifier
 
-```
-git fetch template && git checkout template/main .github
-```
+Response: Redirects to original URL
 
-Затем добавьте полученные изменения в свой репозиторий.
+### GET /api/user/urls
+Response:
+[
+    {
+        "short_url": "string",     // Shortened URL
+        "original_url": "string"   // Original URL
+    }
+]
 
-## Запуск автотестов
+### DELETE /api/user/urls
+Request body:
+[
+    "string"   // Array of shortened URL IDs to delete
+]
 
-Для успешного запуска автотестов называйте ветки `iter<number>`, где `<number>` — порядковый номер инкремента. Например, в ветке с названием `iter4` запустятся автотесты для инкрементов с первого по четвёртый.
+### GET /ping
+Response: Database connection status
 
-При мёрже ветки с инкрементом в основную ветку `main` будут запускаться все автотесты.
+## Response Codes
+- 200: Successful operation
+- 201: URL successfully created
+- 307: Temporary redirect
+- 400: Invalid request format
+- 401: Authentication required
+- 404: URL not found
+- 409: URL already exists
+- 500: Internal server error
 
-Подробнее про локальный и автоматический запуск читайте в [README автотестов](https://github.com/Yandex-Practicum/go-autotests).
+## Authentication
+Protected endpoints require JWT token in header:
+Authorization: Bearer <token>

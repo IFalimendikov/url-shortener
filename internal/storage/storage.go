@@ -10,6 +10,7 @@ import (
 	"url-shortener/internal/models"
 )
 
+// Storage holds the file, database and URL mapping information
 type Storage struct {
 	cfg  *config.Config
 	DB   *sql.DB
@@ -17,10 +18,12 @@ type Storage struct {
 	URLs map[string]models.URLRecord
 }
 
+// Query for creating urls table
 var (
 	UrlsQuery = `CREATE TABLE IF NOT EXISTS urls (user_id text, short_url text, url text PRIMARY KEY, deleted bool DEFAULT false);`
 )
 
+// New creates a new Storage instance with file and database connections
 func New(ctx context.Context, cfg *config.Config) (*Storage, error) {
 	file, err := os.OpenFile(cfg.StoragePath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {

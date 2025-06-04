@@ -8,6 +8,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary Get user's URLs
+// @Description Retrieves all URLs associated with the authenticated user
+// @Tags urls
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer JWT token"
+// @Success 200 {array} models.UserURLResponse "List of user's URLs"
+// @Success 204 {string} string "No URLs found!"
+// @Failure 400 {string} string "Error finding URLs!"
+// @Router /api/user/urls [get]
 func (t *Handler) GetUserURLs(c *gin.Context, cfg config.Config) {
 	var res []models.UserURLResponse
 

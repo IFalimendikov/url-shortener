@@ -5,6 +5,7 @@ import (
 	"url-shortener/internal/models"
 )
 
+// GetUserURLs retrieves all shortened URLs associated with a specific user ID
 func (s *URLs) GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error {
 	db := s.Storage.DB
 	if db != nil {

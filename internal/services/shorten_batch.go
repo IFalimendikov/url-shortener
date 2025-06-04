@@ -8,6 +8,7 @@ import (
 	"github.com/deatil/go-encoding/base62"
 )
 
+// ShortenBatch processes multiple URLs in a single transaction
 func (s *URLs) ShortenBatch(ctx context.Context, userID string, req []models.BatchUnitURLRequest, res *[]models.BatchUnitURLResponse) error {
 	if s.Storage.DB != nil {
 		tx, err := s.Storage.DB.BeginTx(ctx, &sql.TxOptions{

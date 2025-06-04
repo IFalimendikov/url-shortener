@@ -7,6 +7,7 @@ import (
 	"url-shortener/internal/models"
 )
 
+// DeleteURLs processes a batch of URLs for deletion for a specific user
 func (s *URLs) DeleteURLs(req []string, userID string) error {
 	ctx := context.Background()
 	ch := make(chan models.DeleteRecord, len(req))
@@ -23,11 +24,12 @@ func (s *URLs) DeleteURLs(req []string, userID string) error {
 	return s.processURLs(ctx, ch)
 }
 
+// processURLs handles concurrent processing of URLs from multiple channels with buffered batch commits
 func (s *URLs) processURLs(ctx context.Context, chs ...chan models.DeleteRecord) error {
 	var wg sync.WaitGroup
 	var buffer []models.DeleteRecord
 	resultCh := make(chan models.DeleteRecord, 20)
-	timer := time.NewTicker(1 * time.Second)
+	timer := time.NewTicker(2 * time.Second)
 
 	s.Log.Info("Starting URL processing", "channels", len(chs))
 
@@ -67,7 +69,7 @@ func (s *URLs) processURLs(ctx context.Context, chs ...chan models.DeleteRecord)
 				return nil
 			}
 			buffer = append(buffer, x)
-			if len(buffer) >= 10 {
+			if len(buffer) >= 5 {
 				s.Log.Info("Buffer full, committing batch", "count", len(buffer))
 				if err := s.commitDB(ctx, buffer); err != nil {
 					s.Log.Error("Failed to commit batch",
@@ -88,6 +90,7 @@ func (s *URLs) processURLs(ctx context.Context, chs ...chan models.DeleteRecord)
 	}
 }
 
+// commitDB performs a transactional deletion of URL records in the database
 func (s *URLs) commitDB(ctx context.Context, records []models.DeleteRecord) error {
 	db := s.Storage.DB
 	if db != nil {
