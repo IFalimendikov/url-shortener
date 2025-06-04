@@ -104,6 +104,10 @@ func (s *URLs) commitDB(ctx context.Context, records []models.DeleteRecord) erro
 		if err = s.Storage.Delete(ctx, tx, records); err != nil {
 			return err
 		}
+
+		if err = tx.Commit(); err != nil {
+			return err
+		}
 	}
 	return nil
 }

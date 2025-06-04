@@ -18,10 +18,14 @@ func (s *URLs) ShortenBatch(ctx context.Context, userID string, req []models.Bat
 		}
 		defer tx.Rollback()
 
-		if err = s.Storage.SaveBatch(ctx, tx, userID, req); err != nil {
+		err = s.Storage.SaveBatch(ctx, tx, userID, req)
+		if err != nil {
 			return err
 		}
-		return nil
+
+		if err = tx.Commit(); err != nil {
+			return err
+		}
 	}
 
 	for _, x := range req {
