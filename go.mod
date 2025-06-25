@@ -4,6 +4,7 @@ go 1.24
 
 require (
 	github.com/Masterminds/squirrel v1.5.4
+	github.com/brianvoe/gofakeit/v7 v7.2.1
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/deatil/go-encoding v1.0.3003
 	github.com/gin-gonic/gin v1.10.1
@@ -14,11 +15,11 @@ require (
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.4
+	golang.org/x/tools v0.33.0
 )
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/brianvoe/gofakeit/v7 v7.2.1 // indirect
 	github.com/bytedance/sonic v1.13.3 // indirect
 	github.com/bytedance/sonic/loader v0.2.4 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
@@ -51,12 +52,14 @@ require (
 	github.com/ugorji/go/codec v1.2.14 // indirect
 	golang.org/x/arch v0.17.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
+	golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678 // indirect
+	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
-	golang.org/x/tools v0.33.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
+	honnef.co/go/tools v0.6.1 // indirect
 )
 
 require (

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime/pprof"
 
+	"url-shortener/cmd/staticlint"
 	_ "url-shortener/docs"
 	"url-shortener/internal/config"
 	"url-shortener/internal/flag"
@@ -17,7 +18,14 @@ import (
 	"url-shortener/internal/storage"
 	"url-shortener/internal/transport"
 
+	"encoding/json"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/analysis/multichecker"
+	"golang.org/x/tools/go/analysis/passes/printf"
+	"golang.org/x/tools/go/analysis/passes/shadow"
+	"golang.org/x/tools/go/analysis/passes/structtag"
+	"honnef.co/go/tools/staticcheck"
 )
 
 // @title           URL Shortener API
@@ -26,7 +34,46 @@ import (
 
 // @host      localhost:8080
 // @BasePath  /api/v1
+
+const Config = `config.json`
+
+type ConfigData struct {
+	Staticcheck []string
+}
+
 func main() {
+	appfile, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	data, err := os.ReadFile(filepath.Join(filepath.Dir(appfile), Config))
+	if err != nil {
+		panic(err)
+	}
+	var cfgLint ConfigData
+	if err = json.Unmarshal(data, &cfgLint); err != nil {
+		panic(err)
+	}
+	mychecks := []*analysis.Analyzer{
+		printf.Analyzer,
+		shadow.Analyzer,
+		structtag.Analyzer,
+		staticlint.ExitCheckAnalyzer,
+	}
+	checks := make(map[string]bool)
+	for _, v := range cfgLint.Staticcheck {
+		checks[v] = true
+	}
+
+	for _, v := range staticcheck.Analyzers {
+		if checks[v.Analyzer.Name] {
+			mychecks = append(mychecks, v.Analyzer)
+		}
+	}
+	multichecker.Main(
+		mychecks...,
+	)
+
 	cfg := flag.Parse()
 	config.Read(&cfg)
 
