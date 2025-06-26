@@ -16,16 +16,19 @@ import (
 	"honnef.co/go/tools/staticcheck"
 )
 
+// ExitCheckAnalyzer defines an analyzer for detecting direct calls to os.Exit in the main function
 var ExitCheckAnalyzer = &analysis.Analyzer{
-	Name: "addlint",
-	Doc:  "reports integer additions",
-	Run:  run,
+    Name: "addlint",
+    Doc:  "reports os.Exit calls in main.main",
+    Run:  run,
 }
 
+// Config specifies the path to the configuration file
 const Config = `config.json`
 
+// ConfigData represents the structure of the configuration data
 type ConfigData struct {
-	Staticcheck []string
+    Staticcheck []string
 }
 
 func main() {
