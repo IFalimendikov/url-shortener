@@ -5,6 +5,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"fmt"
 	"path/filepath"
 	"runtime/pprof"
 
@@ -20,6 +21,12 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+var (
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+	buildCommit  string = "N/A"
+)
+
 // @title           URL Shortener API
 // @version         1.0
 // @description     A URL shortening service API
@@ -27,6 +34,8 @@ import (
 // @host      localhost:8080
 // @BasePath  /api/v1
 func main() {
+	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
+
 	cfg := flag.Parse()
 	config.Read(&cfg)
 
