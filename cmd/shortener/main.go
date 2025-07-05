@@ -74,5 +74,9 @@ func main() {
 
 	t := transport.New(cfg, h, log)
 	r := transport.NewRouter(t)
+
+	if cfg.HTTPS {
+		r.RunTLS(cfg.ServerAddr, "cert.pem", "key.pem")
+	}
 	r.Run(cfg.ServerAddr)
 }

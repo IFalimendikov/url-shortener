@@ -17,6 +17,8 @@ type Config struct {
 	StoragePath string `env:"FILE_STORAGE_PATH"`
 	// DBAddress holds the database connection string
 	DBAddress string `env:"DATABASE_DSN" envDefault:""`
+	// HTTPS indicates whether the server should run with HTTPS
+	HTTPS bool `env:"HTTPS"`
 }
 
 // Read parses environment variables into the Config struct.
