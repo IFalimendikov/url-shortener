@@ -60,6 +60,7 @@ func Read(cfg *Config) {
 	}
 }
 
+// New parses JSON variables into the Config struct.
 func New(cfg *Config) error {
 	var tempCfg tempCfg
 	if cfg.Config != "" {
