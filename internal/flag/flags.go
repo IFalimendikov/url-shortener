@@ -21,6 +21,7 @@ func Parse() config.Config {
 	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base HTTP address returned before short URL")
 	flag.StringVar(&cfg.StoragePath, "f", cfg.StoragePath, "Storage file path for URLs")
 	flag.StringVar(&cfg.DBAddress, "d", cfg.DBAddress, "Database connection.")
+	flag.StringVar(&cfg.Config, "c", cfg.Config, "Config in JSON format")
 	flag.BoolVar(&cfg.HTTPS, "s", cfg.HTTPS, "Enable HTTPS server (true/false)")
 	flag.Parse()
 

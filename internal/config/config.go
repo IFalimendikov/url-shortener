@@ -1,7 +1,9 @@
 package config
 
 import (
+	"encoding/json"
 	"log"
+	"os"
 
 	env "github.com/caarlos0/env/v11"
 )
@@ -12,13 +14,28 @@ type Config struct {
 	// ServerAddr specifies the server address in format host:port
 	ServerAddr string `env:"SERVER_ADDRESS"`
 	// BaseURL is the base URL for the shortened URLs
-	BaseURL string `env:"BASE_URL"`
+	BaseURL string `env:"BASE_URL" `
 	// StoragePath specifies the path to the file storage
 	StoragePath string `env:"FILE_STORAGE_PATH"`
 	// DBAddress holds the database connection string
 	DBAddress string `env:"DATABASE_DSN" envDefault:""`
+	// Config in JSON format
+	Config string `env:"CONFIG" envDefault:""`
 	// HTTPS indicates whether the server should run with HTTPS
 	HTTPS bool `env:"HTTPS"`
+}
+
+type tempCfg struct {
+	// ServerAddr specifies the server address in format host:port
+	ServerAddr string `env:"server_address"`
+	// BaseURL is the base URL for the shortened URLs
+	BaseURL string `env:"base_url"`
+	// StoragePath specifies the path to the file storage
+	StoragePath string `env:"file_storage_path"`
+	// DBAddress holds the database connection string
+	DBAddress string `env:"database_dsn" envDefault:""`
+	// HTTPS indicates whether the server should run with HTTPS
+	HTTPS bool `env:"enable_https"`
 }
 
 // Read parses environment variables into the Config struct.
@@ -41,4 +58,41 @@ func Read(cfg *Config) {
 	if cfg.StoragePath == "" {
 		cfg.StoragePath = "urls.json"
 	}
+}
+
+func New(cfg *Config) error {
+	var tempCfg tempCfg
+	if cfg.Config != "" {
+		file, err := os.ReadFile(cfg.Config)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(file, &tempCfg)
+		if err != nil {
+			return err
+		}
+
+		if tempCfg.BaseURL != "" {
+			cfg.BaseURL = tempCfg.BaseURL
+		}
+
+		if tempCfg.ServerAddr != "" {
+			cfg.ServerAddr = tempCfg.ServerAddr
+		}
+
+		if tempCfg.StoragePath != "" {
+			cfg.StoragePath = tempCfg.StoragePath
+		}
+
+		if tempCfg.DBAddress != "" {
+			cfg.DBAddress = tempCfg.DBAddress
+		}
+
+		if tempCfg.HTTPS {
+			cfg.HTTPS = tempCfg.HTTPS
+		}
+	}
+	Read(cfg)
+	return nil
 }

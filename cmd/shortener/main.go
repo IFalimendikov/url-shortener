@@ -37,7 +37,7 @@ func main() {
 	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
 
 	cfg := flag.Parse()
-	config.Read(&cfg)
+	config.New(&cfg)
 
 	log := logger.New()
 	ctx := context.Background()
