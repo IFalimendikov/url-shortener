@@ -6,7 +6,9 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"runtime/pprof"
 
 	_ "url-shortener/docs"
@@ -40,7 +42,8 @@ func main() {
 	config.New(&cfg)
 
 	log := logger.New()
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	defer stop()
 
 	go func() {
 		if err := http.ListenAndServe("localhost:6060", nil); err != nil {
@@ -79,4 +82,8 @@ func main() {
 		r.RunTLS(cfg.ServerAddr, "cert.pem", "key.pem")
 	}
 	r.Run(cfg.ServerAddr)
+
+	<- ctx.Done()
+	log.Info("Received shutdown signal, shutting down gracefully...")
+	stop()
 }
