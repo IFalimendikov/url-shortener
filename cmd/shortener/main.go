@@ -8,8 +8,8 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"syscall"
 	"runtime/pprof"
+	"syscall"
 
 	_ "url-shortener/docs"
 	"url-shortener/internal/config"
@@ -78,12 +78,15 @@ func main() {
 	t := transport.New(cfg, h, log)
 	r := transport.NewRouter(t)
 
-	if cfg.HTTPS {
-		r.RunTLS(cfg.ServerAddr, "cert.pem", "key.pem")
-	}
-	r.Run(cfg.ServerAddr)
+	go func() {
+		if cfg.HTTPS {
+			r.RunTLS(cfg.ServerAddr, "cert.pem", "key.pem")
+		} else {
+			r.Run(cfg.ServerAddr)
+		}
+	}()
 
-	<- ctx.Done()
-	log.Info("Received shutdown signal, shutting down gracefully...")
+	<-ctx.Done()
 	stop()
+	log.Info("Received shutdown signal, shutting down gracefully...")
 }
