@@ -14,6 +14,7 @@ type Service interface {
 	GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error
 	PingDB() bool
 	DeleteURLs(req []string, userID string) error
+	GetStats(ctx context.Context) (models.Stats, error)
 }
 
 // Handler manages HTTP request handling for URL shortening service

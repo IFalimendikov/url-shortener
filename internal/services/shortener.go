@@ -17,6 +17,7 @@ type Service interface {
 	GetUserURLs(ctx context.Context, userID string, res *[]models.UserURLResponse) error
 	PingDB() bool
 	DeleteURLs(ctx context.Context, req []string, userID string) error
+	GetStats(ctx context.Context) (models.Stats, error)
 }
 
 // URLs implements the Service interface and manages URL shortening operations

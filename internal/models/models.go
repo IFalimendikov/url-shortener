@@ -42,3 +42,9 @@ type DeleteRecord struct {
 	UserID   string `json:"user_id"`
 	ShortURL string `json:"short_url"`
 }
+
+// Stats show statistics of a service
+type Stats struct {
+	Urls  int `json:"urls"`
+	Users int `json:"users"`
+}
