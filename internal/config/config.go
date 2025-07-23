@@ -6,6 +6,7 @@ import (
 	"os"
 
 	env "github.com/caarlos0/env/v11"
+	"github.com/joho/godotenv"
 )
 
 // Config holds the application configuration settings.
@@ -23,6 +24,8 @@ type Config struct {
 	Config string `env:"CONFIG" envDefault:""`
 	// HTTPS indicates whether the server should run with HTTPS
 	HTTPS bool `env:"HTTPS"`
+	// TrustedSubnet shows trusted subnets mask
+	TrustedSubnet string `env:"TRUSTED_SUBNET"`
 }
 
 type tempCfg struct {
@@ -36,6 +39,8 @@ type tempCfg struct {
 	DBAddress string `env:"database_dsn" envDefault:""`
 	// HTTPS indicates whether the server should run with HTTPS
 	HTTPS bool `env:"enable_https"`
+	// TrustedSubnet shows trusted subnets mask
+	TrustedSubnet string `env:"TRUSTED_SUBNET"`
 }
 
 // Read parses environment variables into the Config struct.
@@ -62,6 +67,11 @@ func Read(cfg *Config) {
 
 // New parses JSON variables into the Config struct.
 func New(cfg *Config) error {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	var tempCfg tempCfg
 	if cfg.Config != "" {
 		file, err := os.ReadFile(cfg.Config)
@@ -86,8 +96,14 @@ func New(cfg *Config) error {
 			cfg.StoragePath = tempCfg.StoragePath
 		}
 
+		if tempCfg.TrustedSubnet != "" {
+			cfg.TrustedSubnet = tempCfg.TrustedSubnet
+		}
+
 		if tempCfg.DBAddress != "" {
 			cfg.DBAddress = tempCfg.DBAddress
+		} else {
+			cfg.DBAddress = os.Getenv("DATABASE_DSN")
 		}
 
 		if tempCfg.HTTPS {

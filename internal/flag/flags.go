@@ -22,6 +22,7 @@ func Parse() config.Config {
 	flag.StringVar(&cfg.StoragePath, "f", cfg.StoragePath, "Storage file path for URLs")
 	flag.StringVar(&cfg.DBAddress, "d", cfg.DBAddress, "Database connection.")
 	flag.StringVar(&cfg.Config, "c", cfg.Config, "Config in JSON format")
+	flag.StringVar(&cfg.Config, "t", cfg.TrustedSubnet, "Trusted Subnet")
 	flag.BoolVar(&cfg.HTTPS, "s", cfg.HTTPS, "Enable HTTPS server (true/false)")
 	flag.Parse()
 
