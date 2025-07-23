@@ -78,7 +78,7 @@ func NewRouter(t *Transport) *gin.Engine {
 	})
 	r.GET("/api/internal/stats", func(c *gin.Context) {
 		t.handler.GetStats(c, t.cfg)
-	} )
+	})
 
 	r.DELETE("/api/user/urls", func(c *gin.Context) {
 		t.handler.DeleteURLs(c, t.cfg)

@@ -7,6 +7,7 @@ import (
 	_ "url-shortener/docs"
 
 	"encoding/json"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
