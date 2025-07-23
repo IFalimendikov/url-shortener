@@ -6,7 +6,7 @@ import (
 	"os"
 
 	env "github.com/caarlos0/env/v11"
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 )
 
 // Config holds the application configuration settings.
