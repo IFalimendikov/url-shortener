@@ -67,10 +67,10 @@ func Read(cfg *Config) {
 
 // New parses JSON variables into the Config struct.
 func New(cfg *Config) error {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal(err)
-	}
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	var tempCfg tempCfg
 	if cfg.Config != "" {
@@ -102,9 +102,10 @@ func New(cfg *Config) error {
 
 		if tempCfg.DBAddress != "" {
 			cfg.DBAddress = tempCfg.DBAddress
-		} else {
-			cfg.DBAddress = os.Getenv("DATABASE_DSN")
 		}
+		// } else {
+		// 	cfg.DBAddress = os.Getenv("DATABASE_DSN")
+		// }
 
 		if tempCfg.HTTPS {
 			cfg.HTTPS = tempCfg.HTTPS
