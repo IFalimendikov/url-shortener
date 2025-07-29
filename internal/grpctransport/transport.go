@@ -1,10 +1,10 @@
-package grpc_transport
+package grpctransport
 
 import (
 	"context"
 	"log/slog"
 
-	"url-shortener/internal/grpc_handler"
+	"url-shortener/internal/grpchandler"
 	pb "url-shortener/internal/proto"
 
 	"google.golang.org/grpc"
@@ -17,14 +17,21 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// contextKey is a type for keys used in context to avoid collisions
+type contextKey string
+
+const (
+	userIDKey contextKey = "user_id"
+)
+
 // Transport handles gRPC transport layer operations including middleware and routing
 type GRPCTransport struct {
-	handler *grpc_handler.GRPCHandler
+	handler *grpchandler.GRPCHandler
 	log     *slog.Logger
 }
 
 // New creates a new Transport instance with the provided configuration and handlers
-func New(h *grpc_handler.GRPCHandler, log *slog.Logger) *GRPCTransport {
+func New(h *grpchandler.GRPCHandler, log *slog.Logger) *GRPCTransport {
 	return &GRPCTransport{
 		handler: h,
 		log:     log,
@@ -106,7 +113,7 @@ func AuthInterceptor() grpc.UnaryServerInterceptor {
 
 				if err == nil && token.Valid {
 					userID = claims.UserID
-					ctx = context.WithValue(ctx, "user_id", userID)
+					ctx = context.WithValue(ctx, userIDKey, userID)
 					return handler(ctx, req)
 				}
 			}

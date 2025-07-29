@@ -14,16 +14,17 @@ import (
 	_ "url-shortener/docs"
 	"url-shortener/internal/config"
 	"url-shortener/internal/flag"
-	grpcHandler "url-shortener/internal/grpc_handler"
-	grpcTransport "url-shortener/internal/grpc_transport"
+	grpcHandler "url-shortener/internal/grpchandler"
+	grpcTransport "url-shortener/internal/grpctransport"
 	"url-shortener/internal/handler"
 	"url-shortener/internal/logger"
 	"url-shortener/internal/services"
 	"url-shortener/internal/storage"
 	"url-shortener/internal/transport"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"net"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 var (

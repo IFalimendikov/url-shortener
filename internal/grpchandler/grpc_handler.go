@@ -1,4 +1,4 @@
-package grpc_handler
+package grpchandler
 
 import (
 	"context"
@@ -22,17 +22,17 @@ type Service interface {
 
 // Handler manages GRPC request handling for URL shortening service
 type GRPCHandler struct {
-    proto.UnimplementedURLShortenerServer
-    service Service
-	cfg config.Config
-    log     *slog.Logger
+	proto.UnimplementedURLShortenerServer
+	service Service
+	cfg     config.Config
+	log     *slog.Logger
 }
 
 // New creates a new GRPCHandler instance
 func New(ctx context.Context, s Service, cfg config.Config, log *slog.Logger) *GRPCHandler {
 	return &GRPCHandler{
 		service: s,
-		cfg:	 cfg,
+		cfg:     cfg,
 		log:     log,
 	}
 }

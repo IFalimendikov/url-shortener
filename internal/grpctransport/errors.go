@@ -1,4 +1,4 @@
-package grpc_transport
+package grpctransport
 
 import (
 	"errors"

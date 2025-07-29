@@ -1,13 +1,14 @@
-package grpc_handler
+package grpchandler
 
 import (
 	"context"
 	"net"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"url-shortener/internal/proto"
+
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // Shows service stats

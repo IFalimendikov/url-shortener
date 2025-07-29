@@ -1,11 +1,12 @@
-package grpc_handler
+package grpchandler
 
 import (
 	"context"
+	"url-shortener/internal/proto"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"url-shortener/internal/proto"
 )
 
 // Delete multiple URLs for a specific user
@@ -32,7 +33,7 @@ func (g *GRPCHandler) DeleteURLs(ctx context.Context, in *proto.DeleteURLsReques
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error deleting URLs")
 	}
-	
+
 	return &proto.DeleteURLsResponse{
 		Status: true,
 	}, nil

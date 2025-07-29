@@ -1,4 +1,4 @@
-package grpc_handler
+package grpchandler
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"url-shortener/internal/proto"
 
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // ShortenBatch handles batch URL shortening requests via gRPC

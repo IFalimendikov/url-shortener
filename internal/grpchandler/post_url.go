@@ -1,8 +1,9 @@
-package grpc_handler
+package grpchandler
 
 import (
 	"context"
 	"errors"
+	"net/url"
 	"url-shortener/internal/proto"
 	"url-shortener/internal/storage"
 
@@ -11,17 +12,21 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Creates a shortened version of a URL provided in JSON format
-func (g *GRPCHandler) ShortenURL(ctx context.Context, in *proto.ShortenURLRequest) (*proto.ShortenURLResponse, error) {
+// Creates a shortened version of a provided URL
+func (g *GRPCHandler) PostURL(ctx context.Context, in *proto.ShortenURLRequest) (*proto.ShortenURLResponse, error) {
 	var response *proto.ShortenURLResponse
 
-	url := in.Url
-	if url == "" {
+	urlStr := in.Url
+	if urlStr == "" {
 		return nil, status.Error(codes.InvalidArgument, "URL is empty")
 	}
 
-	var userID string
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+		return nil, status.Error(codes.InvalidArgument, "Malformed URI")
+	}
 
+	var userID string
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
 		values := md.Get("user_id")
@@ -33,16 +38,18 @@ func (g *GRPCHandler) ShortenURL(ctx context.Context, in *proto.ShortenURLReques
 		return nil, status.Error(codes.Unauthenticated, "Metadata not found")
 	}
 
-	shortURL, err := g.service.SaveURL(ctx, url, userID)
+	shortURL, err := g.service.SaveURL(ctx, urlStr, userID)
 	if err != nil {
 		if errors.Is(err, storage.ErrorDuplicate) {
-			return nil, status.Error(codes.AlreadyExists, "URL already exists")
+			resURL := g.cfg.BaseURL + "/" + string(shortURL)
+			return &proto.ShortenURLResponse{
+				Result: resURL,
+			}, nil
 		}
 		return nil, status.Error(codes.Internal, "Couldn't encode URL")
 	}
 
 	resURL := g.cfg.BaseURL + "/" + string(shortURL)
-
 	response = &proto.ShortenURLResponse{
 		Result: resURL,
 	}

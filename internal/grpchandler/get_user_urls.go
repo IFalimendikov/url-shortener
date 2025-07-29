@@ -1,4 +1,4 @@
-package grpc_handler
+package grpchandler
 
 import (
 	"url-shortener/internal/models"
@@ -14,8 +14,8 @@ import (
 // Retrieves all URLs associated with the authenticated user
 func (g *GRPCHandler) GetUserURLs(ctx context.Context, in *proto.GetUserURLsRequest) (*proto.GetUserURLsResponse, error) {
 	response := &proto.GetUserURLsResponse{
-        Urls: make([]*proto.UserURLResponse, 0),
-    }
+		Urls: make([]*proto.UserURLResponse, 0),
+	}
 	var urls []models.UserURLResponse
 
 	var userID string
@@ -41,11 +41,11 @@ func (g *GRPCHandler) GetUserURLs(ctx context.Context, in *proto.GetUserURLsRequ
 	}
 
 	for i, url := range urls {
-        response.Urls[i] = &proto.UserURLResponse{
-            ShortUrl:    g.cfg.BaseURL + "/" + url.ShortURL,
-            OriginalUrl: url.OriginalURL,
-        }
-    }
+		response.Urls[i] = &proto.UserURLResponse{
+			ShortUrl:    g.cfg.BaseURL + "/" + url.ShortURL,
+			OriginalUrl: url.OriginalURL,
+		}
+	}
 
 	return response, nil
 }
