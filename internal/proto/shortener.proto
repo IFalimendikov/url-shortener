@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package shortener;
+
+option go_package = "internal/proto";
+
+// Request to shorten a single URL
+message ShortenURLRequest {
+  string url = 1;
+}
+
+// Response containing the shortened URL
+message ShortenURLResponse {
+  string result = 1;
+}
+
+// Single URL request in a batch operation
+message BatchUnitURLRequest {
+  string correlation_id = 1;
+  string original_url = 2;
+}
+
+// Single URL response in a batch operation
+message BatchUnitURLResponse {
+  string correlation_id = 1;
+  string short_url = 2;
+}
+
+// Response containing both short and original URLs for a user
+message UserURLResponse {
+  string short_url = 1;
+  string original_url = 2;
+}
+
+// Request to get original URL from short URL
+message GetURLRequest {
+  string short_url = 1;
+}
+
+// Response containing the original URL
+message GetURLResponse {
+  string original_url = 1;
+}
+
+// Request for batch URL shortening
+message BatchRequest {
+  repeated BatchUnitURLRequest urls = 1;
+}
+
+// Response for batch URL shortening
+message BatchResponse {
+  repeated BatchUnitURLResponse urls = 1;
+}
+
+// Request to get all URLs for a user
+message GetUserURLsRequest {
+}
+
+// Response containing all URLs for a user
+message GetUserURLsResponse {
+  repeated UserURLResponse urls = 1;
+}
+
+// Request to check database connection
+message PingRequest {}
+
+// Response containing database connection status
+message PingResponse {
+  bool status = 1;
+}
+
+// Request to delete multiple URLs
+message DeleteURLsRequest {
+  repeated string urls = 1;
+}
+
+// Response for URL deletion operation
+message DeleteURLsResponse {
+  bool status = 1;
+}
+
+// Request to get service statistics
+message GetStatsRequest {}
+
+// Response containing service statistics
+message GetStatsResponse {
+  int32 urls = 1;
+  int32 users = 2;
+}
+
+// Service for URL shortening operations
+service URLShortener {
+  // Shortens a single URL
+  rpc SaveURL(ShortenURLRequest) returns (ShortenURLResponse);
+  // Gets original URL from shortened URL
+  rpc GetURL(GetURLRequest) returns (GetURLResponse);
+  // Shortens multiple URLs in batch
+  rpc ShortenBatch(BatchRequest) returns (BatchResponse);
+  // Gets all URLs for a user
+  rpc GetUserURLs(GetUserURLsRequest) returns (GetUserURLsResponse);
+  // Checks database connection
+  rpc PingDB(PingRequest) returns (PingResponse);
+  // Deletes multiple URLs
+  rpc DeleteURLs(DeleteURLsRequest) returns (DeleteURLsResponse);
+  // Gets service statistics
+  rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
+}
