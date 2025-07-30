@@ -14,11 +14,15 @@ import (
 	_ "url-shortener/docs"
 	"url-shortener/internal/config"
 	"url-shortener/internal/flag"
+	grpcHandler "url-shortener/internal/grpchandler"
+	grpcTransport "url-shortener/internal/grpctransport"
 	"url-shortener/internal/handler"
 	"url-shortener/internal/logger"
 	"url-shortener/internal/services"
 	"url-shortener/internal/storage"
 	"url-shortener/internal/transport"
+
+	"net"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -73,20 +77,50 @@ func main() {
 	defer store.DB.Close()
 
 	s := services.New(ctx, log, store)
-	h := handler.New(s, log)
 
-	t := transport.New(cfg, h, log)
-	r := transport.NewRouter(t)
+	httpHandler := handler.New(s, log)
+	grpcHandler := grpcHandler.New(ctx, s, cfg, log)
+
+	httpErrCh := make(chan error, 1)
+	grpcErrCh := make(chan error, 1)
+
+	httpTransport := transport.New(cfg, httpHandler, log)
+	r := transport.NewRouter(httpTransport)
+
+	grpcServer := grpcTransport.New(grpcHandler, log)
+	g := grpcTransport.NewRouter(grpcServer)
 
 	go func() {
 		if cfg.HTTPS {
-			r.RunTLS(cfg.ServerAddr, "cert.pem", "key.pem")
+			if err := r.RunTLS(cfg.ServerAddr, "cert.pem", "key.pem"); err != nil {
+				httpErrCh <- fmt.Errorf("HTTP server failed: %w", err)
+			}
 		} else {
-			r.Run(cfg.ServerAddr)
+			if err := r.Run(cfg.ServerAddr); err != nil {
+				httpErrCh <- fmt.Errorf("HTTP server failed: %w", err)
+			}
 		}
 	}()
 
-	<-ctx.Done()
-	stop()
-	log.Info("Received shutdown signal, shutting down gracefully...")
+	go func() {
+		grpcAddr := ":50051"
+		lis, err := net.Listen("tcp", grpcAddr)
+		if err != nil {
+			grpcErrCh <- err
+			return
+		}
+		log.Info("Starting gRPC server", "address", grpcAddr)
+		if err := g.Serve(lis); err != nil {
+			grpcErrCh <- err
+		}
+	}()
+
+	select {
+	case err := <-httpErrCh:
+		log.Error("HTTP server error", "error", err)
+	case err := <-grpcErrCh:
+		log.Error("gRPC server error", "error", err)
+	case <-ctx.Done():
+		log.Info("Servers shut down successfully")
+	}
 }
